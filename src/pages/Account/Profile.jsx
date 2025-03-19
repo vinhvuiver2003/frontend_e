@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateUserProfile } from '../../store/slices/authSlice';
+import authService from '../../services/authService';
 
 const Profile = () => {
     const dispatch = useDispatch();
@@ -19,18 +20,41 @@ const Profile = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
 
-    // Điền dữ liệu ban đầu
+    // Lấy thông tin người dùng khi component mount
     useEffect(() => {
-        if (user) {
-            setFormData({
-                firstName: user.firstName || '',
-                lastName: user.lastName || '',
-                email: user.email || '',
-                phone: user.phone || '',
-                address: user.address || ''
-            });
-        }
-    }, [user]);
+        const fetchUserProfile = async () => {
+            try {
+                // Chỉ gọi API khi không có dữ liệu user từ Redux store
+                if (!user || !user.email) {
+                    const response = await authService.getCurrentUser();
+                    if (response && response.data) {
+                        // Cập nhật thông tin user vào Redux store
+                        dispatch(updateUserProfile(response.data));
+                        setFormData({
+                            firstName: response.data.firstName || '',
+                            lastName: response.data.lastName || '',
+                            email: response.data.email || '',
+                            phone: response.data.phone || '',
+                            address: response.data.address || ''
+                        });
+                    }
+                } else {
+                    // Sử dụng dữ liệu từ Redux store
+                    setFormData({
+                        firstName: user.firstName || '',
+                        lastName: user.lastName || '',
+                        email: user.email || '',
+                        phone: user.phone || '',
+                        address: user.address || ''
+                    });
+                }
+            } catch (error) {
+                console.error("Lỗi khi lấy thông tin người dùng:", error);
+            }
+        };
+
+        fetchUserProfile();
+    }, [user, dispatch]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -80,21 +104,23 @@ const Profile = () => {
         setIsLoading(true);
 
         try {
-            // Mô phỏng gọi API cập nhật thông tin
+            // Gọi API để cập nhật thông tin người dùng
+            // Ví dụ:
+            // await authService.updateProfile(formData);
+
+            // Update in Redux store
+            dispatch(updateUserProfile(formData));
+
+            setIsEditing(false);
+            setSubmitSuccess(true);
+
+            // Ẩn thông báo thành công sau 3 giây
             setTimeout(() => {
-                dispatch(updateUserProfile(formData));
-                setIsEditing(false);
-                setSubmitSuccess(true);
-
-                // Ẩn thông báo thành công sau 3 giây
-                setTimeout(() => {
-                    setSubmitSuccess(false);
-                }, 3000);
-
-                setIsLoading(false);
-            }, 1000);
+                setSubmitSuccess(false);
+            }, 3000);
         } catch (error) {
             setErrors({ form: 'Đã xảy ra lỗi khi cập nhật thông tin. Vui lòng thử lại.' });
+        } finally {
             setIsLoading(false);
         }
     };
@@ -127,6 +153,7 @@ const Profile = () => {
             )}
 
             <form onSubmit={handleSubmit}>
+                {/* Form fields remain the same */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
                         <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -156,6 +183,7 @@ const Profile = () => {
                         )}
                     </div>
 
+                    {/* Other form fields... */}
                     <div>
                         <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
                             Họ

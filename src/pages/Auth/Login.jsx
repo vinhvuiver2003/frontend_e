@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { login } from '../../store/slices/authSlice';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { loginUser, clearError } from '../../store/slices/authSlice';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -9,10 +9,27 @@ const Login = () => {
         password: ''
     });
     const [errors, setErrors] = useState({});
-    const [isLoading, setIsLoading] = useState(false);
 
     const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useDispatch();
+
+    const { loading, error, isAuthenticated } = useSelector(state => state.auth);
+
+    // Chuyển hướng nếu đã đăng nhập
+    useEffect(() => {
+        if (isAuthenticated) {
+            const from = location.state?.from || '/';
+            navigate(from);
+        }
+    }, [isAuthenticated, navigate, location]);
+
+    // Xóa lỗi khi unmount component
+    useEffect(() => {
+        return () => {
+            dispatch(clearError());
+        };
+    }, [dispatch]);
 
     const handleChange = (e) => {
         setFormData({
@@ -49,29 +66,7 @@ const Login = () => {
 
         if (!validateForm()) return;
 
-        setIsLoading(true);
-
-        try {
-            // Trong thực tế, đây sẽ là một gọi API đến backend
-            // Hiện tại, chúng ta sẽ mô phỏng nó
-            setTimeout(() => {
-                dispatch(login({
-                    user: {
-                        id: 1,
-                        username: formData.usernameOrEmail,
-                        firstName: 'Người',
-                        lastName: 'Dùng'
-                    },
-                    token: 'fake-jwt-token'
-                }));
-
-                navigate('/');
-                setIsLoading(false);
-            }, 1000);
-        } catch (error) {
-            setErrors({ form: 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.' });
-            setIsLoading(false);
-        }
+        dispatch(loginUser(formData));
     };
 
     return (
@@ -90,9 +85,9 @@ const Login = () => {
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    {errors.form && (
+                    {error && (
                         <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                            {errors.form}
+                            {error}
                         </div>
                     )}
 
@@ -164,12 +159,12 @@ const Login = () => {
                         <div>
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={loading}
                                 className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                                    isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                                    loading ? 'opacity-70 cursor-not-allowed' : ''
                                 }`}
                             >
-                                {isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
+                                {loading ? 'Đang xử lý...' : 'Đăng nhập'}
                             </button>
                         </div>
                     </form>
