@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { clearCart } from '../../store/slices/cartSlice';
+import { clearCartAsync } from '../../store/slices/cartSlice';
+
+// Hàm tiện ích để format giá
+const formatPrice = (price) => {
+    if (price === undefined || price === null) {
+        return '0';
+    }
+    return price.toLocaleString('vi-VN');
+};
 
 const Checkout = () => {
     const dispatch = useDispatch();
@@ -11,14 +19,20 @@ const Checkout = () => {
     const { isAuthenticated, user } = useSelector(state => state.auth);
 
     const [formData, setFormData] = useState({
-        fullName: '',
-        email: '',
-        phone: '',
-        address: '',
-        city: '',
-        note: '',
+        fullName: user?.fullName || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        address: user?.address || '',
+        city: user?.city || '',
+        notes: '',
         paymentMethod: 'cod',
-        shipMethod: 'standard'
+        shippingMethod: 'standard',
+        saveInfo: true,
+        cardNumber: '',
+        cardName: '',
+        cardExpiry: '',
+        cardCvc: '',
+        momoPhone: ''
     });
 
     const [errors, setErrors] = useState({});
@@ -67,62 +81,184 @@ const Checkout = () => {
     };
 
     const validateForm = () => {
-        const newErrors = {};
+        const errors = {};
 
         if (!formData.fullName.trim()) {
-            newErrors.fullName = 'Vui lòng nhập họ tên';
+            errors.fullName = 'Vui lòng nhập họ tên';
         }
 
         if (!formData.email.trim()) {
-            newErrors.email = 'Vui lòng nhập email';
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email không hợp lệ';
+            errors.email = 'Vui lòng nhập email';
+        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
+            errors.email = 'Email không hợp lệ';
         }
 
         if (!formData.phone.trim()) {
-            newErrors.phone = 'Vui lòng nhập số điện thoại';
-        } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ''))) {
-            newErrors.phone = 'Số điện thoại không hợp lệ';
+            errors.phone = 'Vui lòng nhập số điện thoại';
+        } else if (!/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(formData.phone)) {
+            errors.phone = 'Số điện thoại không hợp lệ';
         }
 
         if (!formData.address.trim()) {
-            newErrors.address = 'Vui lòng nhập địa chỉ';
+            errors.address = 'Vui lòng nhập địa chỉ';
         }
 
         if (!formData.city.trim()) {
-            newErrors.city = 'Vui lòng chọn thành phố';
+            errors.city = 'Vui lòng chọn thành phố';
         }
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        // Kiểm tra thông tin thẻ nếu chọn thanh toán qua thẻ
+        if (formData.paymentMethod === 'card') {
+            if (!formData.cardNumber.trim() || !/^\d{16}$/.test(formData.cardNumber.replace(/\s/g, ''))) {
+                errors.cardNumber = 'Vui lòng nhập số thẻ hợp lệ (16 chữ số)';
+            }
+
+            if (!formData.cardName.trim()) {
+                errors.cardName = 'Vui lòng nhập tên chủ thẻ';
+            }
+
+            if (!formData.cardExpiry.trim() || !/^(0[1-9]|1[0-2])\/\d{2}$/.test(formData.cardExpiry)) {
+                errors.cardExpiry = 'Định dạng MM/YY không hợp lệ';
+            }
+
+            if (!formData.cardCvc.trim() || !/^\d{3,4}$/.test(formData.cardCvc)) {
+                errors.cardCvc = 'Mã CVC không hợp lệ';
+            }
+        }
+
+        // Kiểm tra số điện thoại MoMo nếu chọn thanh toán qua MoMo
+        if (formData.paymentMethod === 'momo' && (!formData.momoPhone.trim() || !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(formData.momoPhone))) {
+            errors.momoPhone = 'Vui lòng nhập số điện thoại MoMo hợp lệ';
+        }
+
+        setErrors(errors);
+        return Object.keys(errors).length === 0;
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    // Hàm xử lý khi người dùng thay đổi thông tin thẻ
+    const handleCardNumberChange = (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        // Format số thẻ thành nhóm 4 chữ số
+        if (value) {
+            value = value.match(/.{1,4}/g).join(' ');
+        }
+        setFormData({
+            ...formData,
+            cardNumber: value
+        });
+    };
 
-        if (!validateForm()) return;
+    const handleCardExpiryChange = (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 2) {
+            value = value.substring(0, 2) + '/' + value.substring(2, 4);
+        }
+        setFormData({
+            ...formData,
+            cardExpiry: value
+        });
+    };
 
+    const handleCardCvcChange = (e) => {
+        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+        setFormData({
+            ...formData,
+            cardCvc: value
+        });
+    };
+
+    // Mở rộng hàm handlePayment để xử lý các phương thức thanh toán khác
+    const handlePayment = async () => {
         setIsLoading(true);
-
+        
         try {
-            // Mô phỏng gọi API thanh toán
-            setTimeout(() => {
-                // Xóa giỏ hàng sau khi đặt hàng thành công
-                dispatch(clearCart());
-
-                // Chuyển hướng đến trang thông báo đặt hàng thành công
-                navigate('/order-success');
-                setIsLoading(false);
-            }, 1500);
+            // Xử lý thanh toán dựa trên phương thức đã chọn
+            if (formData.paymentMethod === 'card') {
+                // Giả lập xử lý thanh toán thẻ
+                console.log('Xử lý thanh toán thẻ với thông tin:', {
+                    cardNumber: formData.cardNumber,
+                    cardName: formData.cardName,
+                    cardExpiry: formData.cardExpiry,
+                    cardCvc: formData.cardCvc
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            } else if (formData.paymentMethod === 'momo') {
+                // Giả lập xử lý thanh toán MoMo
+                console.log('Xử lý thanh toán MoMo với số điện thoại:', formData.momoPhone);
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } else if (formData.paymentMethod === 'bank') {
+                // Giả lập xử lý thanh toán chuyển khoản
+                console.log('Xác nhận đặt hàng với thanh toán chuyển khoản');
+                
+                await new Promise(resolve => setTimeout(resolve, 800));
+            } else {
+                // Xử lý COD (mặc định)
+                console.log('Xác nhận đặt hàng với thanh toán COD');
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Lưu thông tin người dùng nếu được chọn
+            if (formData.saveInfo) {
+                // Lưu thông tin người dùng vào localStorage hoặc gửi lên API
+                const userInfoToSave = {
+                    fullName: formData.fullName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    address: formData.address,
+                    city: formData.city
+                };
+                
+                localStorage.setItem('userShippingInfo', JSON.stringify(userInfoToSave));
+            }
+            
+            // Xử lý đặt hàng
+            dispatch(clearCartAsync());
+            
+            // Chuyển hướng đến trang thành công
+            navigate('/checkout/success', {
+                state: {
+                    orderInfo: {
+                        items: items,
+                        subtotal: totalAmount,
+                        shipping: 20000,
+                        total: totalAmount + 20000,
+                        paymentMethod: formData.paymentMethod,
+                        shippingMethod: formData.shippingMethod
+                    }
+                }
+            });
         } catch (error) {
-            console.error('Checkout error:', error);
-            setErrors({ form: 'Đã xảy ra lỗi khi thanh toán. Vui lòng thử lại.' });
+            console.error('Lỗi khi xử lý thanh toán:', error);
+            setErrors({ form: 'Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại.' });
+        } finally {
             setIsLoading(false);
         }
     };
 
+    // Cập nhật hàm handleSubmit để sử dụng hàm mới
+    const handleSubmit = (e) => {
+        if (e) e.preventDefault();
+        
+        const validationErrors = validateForm();
+        
+        if (Object.keys(validationErrors).length === 0) {
+            handlePayment();
+        } else {
+            setErrors(validationErrors);
+            
+            // Cuộn đến lỗi đầu tiên
+            const firstError = document.querySelector('.text-red-500');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    };
+
     // Tính phí vận chuyển (có thể thay đổi theo logic thực tế)
-    const shippingFee = formData.shipMethod === 'express' ? 50000 : 20000;
+    const shippingFee = formData.shippingMethod === 'express' ? 50000 : 20000;
 
     const cities = [
         'Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ',
@@ -259,17 +395,17 @@ const Checkout = () => {
                             </div>
 
                             <div className="mb-4">
-                                <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1">
+                                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
                                     Ghi chú
                                 </label>
                                 <textarea
-                                    id="note"
-                                    name="note"
+                                    id="notes"
+                                    name="notes"
                                     rows="3"
-                                    value={formData.note}
+                                    value={formData.notes}
                                     onChange={handleChange}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Ghi chú về đơn hàng, ví dụ: thời gian hay chỉ dẫn địa điểm giao hàng chi tiết hơn."
+                                    placeholder="Ghi chú đặc biệt về đơn hàng của bạn (tùy chọn)"
                                 ></textarea>
                             </div>
 
@@ -294,35 +430,125 @@ const Checkout = () => {
 
                                     <div className="flex items-center">
                                         <input
-                                            id="bank_transfer"
+                                            id="card"
                                             name="paymentMethod"
                                             type="radio"
-                                            value="bank_transfer"
-                                            checked={formData.paymentMethod === 'bank_transfer'}
+                                            value="card"
+                                            checked={formData.paymentMethod === 'card'}
                                             onChange={handleChange}
                                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                         />
-                                        <label htmlFor="bank_transfer" className="ml-3 block text-sm font-medium text-gray-700">
+                                        <label htmlFor="card" className="ml-3 block text-sm font-medium text-gray-700">
+                                            Thanh toán bằng thẻ tín dụng/ghi nợ
+                                        </label>
+                                    </div>
+
+                                    {formData.paymentMethod === 'card' && (
+                                        <div className="ml-7 mt-3 p-4 bg-gray-50 rounded-md space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Số thẻ <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="cardNumber"
+                                                    value={formData.cardNumber}
+                                                    onChange={handleCardNumberChange}
+                                                    placeholder="1234 5678 9012 3456"
+                                                    className={`w-full px-3 py-2 border ${errors.cardNumber ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                                                />
+                                                {errors.cardNumber && (
+                                                    <p className="mt-1 text-sm text-red-500">{errors.cardNumber}</p>
+                                                )}
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Tên chủ thẻ <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="cardName"
+                                                    value={formData.cardName}
+                                                    onChange={handleChange}
+                                                    placeholder="NGUYEN VAN A"
+                                                    className={`w-full px-3 py-2 border ${errors.cardName ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                                                />
+                                                {errors.cardName && (
+                                                    <p className="mt-1 text-sm text-red-500">{errors.cardName}</p>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Ngày hết hạn <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="cardExpiry"
+                                                        value={formData.cardExpiry}
+                                                        onChange={handleCardExpiryChange}
+                                                        placeholder="MM/YY"
+                                                        className={`w-full px-3 py-2 border ${errors.cardExpiry ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                                                    />
+                                                    {errors.cardExpiry && (
+                                                        <p className="mt-1 text-sm text-red-500">{errors.cardExpiry}</p>
+                                                    )}
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Mã CVC <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="cardCvc"
+                                                        value={formData.cardCvc}
+                                                        onChange={handleCardCvcChange}
+                                                        placeholder="123"
+                                                        className={`w-full px-3 py-2 border ${errors.cardCvc ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                                                    />
+                                                    {errors.cardCvc && (
+                                                        <p className="mt-1 text-sm text-red-500">{errors.cardCvc}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center justify-center space-x-2 mt-2">
+                                                <img src="/images/visa.svg" alt="Visa" className="h-8" />
+                                                <img src="/images/mastercard.svg" alt="Mastercard" className="h-8" />
+                                                <img src="/images/jcb.svg" alt="JCB" className="h-8" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center">
+                                        <input
+                                            id="bank"
+                                            name="paymentMethod"
+                                            type="radio"
+                                            value="bank"
+                                            checked={formData.paymentMethod === 'bank'}
+                                            onChange={handleChange}
+                                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                        />
+                                        <label htmlFor="bank" className="ml-3 block text-sm font-medium text-gray-700">
                                             Chuyển khoản ngân hàng
                                         </label>
                                     </div>
 
-                                    {formData.paymentMethod === 'bank_transfer' && (
-                                        <div className="ml-7 mt-2 p-4 bg-gray-50 rounded border border-gray-200">
-                                            <p className="text-sm text-gray-600">
-                                                Vui lòng chuyển khoản vào tài khoản sau:
-                                            </p>
-                                            <p className="mt-2 text-sm">
-                                                <span className="font-medium">Ngân hàng:</span> Vietcombank
-                                            </p>
-                                            <p className="text-sm">
-                                                <span className="font-medium">Số tài khoản:</span> 1234567890
-                                            </p>
-                                            <p className="text-sm">
-                                                <span className="font-medium">Chủ tài khoản:</span> FASHION STORE
-                                            </p>
-                                            <p className="text-sm">
-                                                <span className="font-medium">Nội dung:</span> Thanh toan don hang #{new Date().getTime().toString().slice(-6)}
+                                    {formData.paymentMethod === 'bank' && (
+                                        <div className="ml-7 mt-3 p-4 bg-gray-50 rounded-md">
+                                            <p className="text-sm text-gray-700 mb-2">Thông tin tài khoản:</p>
+                                            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                                                <li>Ngân hàng: <span className="font-medium">Vietcombank</span></li>
+                                                <li>Số tài khoản: <span className="font-medium">1234567890</span></li>
+                                                <li>Chủ tài khoản: <span className="font-medium">CÔNG TY ABC</span></li>
+                                                <li>Nội dung: <span className="font-medium">Thanh toán đơn hàng - {user?.email}</span></li>
+                                            </ul>
+                                            <p className="text-sm text-gray-700 mt-2">
+                                                Sau khi chuyển khoản, đơn hàng của bạn sẽ được xử lý trong vòng 24 giờ.
                                             </p>
                                         </div>
                                     )}
@@ -338,9 +564,33 @@ const Checkout = () => {
                                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                         />
                                         <label htmlFor="momo" className="ml-3 block text-sm font-medium text-gray-700">
-                                            Thanh toán MoMo
+                                            Thanh toán qua ví MoMo
                                         </label>
                                     </div>
+
+                                    {formData.paymentMethod === 'momo' && (
+                                        <div className="ml-7 mt-3 p-4 bg-gray-50 rounded-md">
+                                            <div className="mb-3">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Số điện thoại MoMo <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="momoPhone"
+                                                    value={formData.momoPhone}
+                                                    onChange={handleChange}
+                                                    placeholder="0912345678"
+                                                    className={`w-full px-3 py-2 border ${errors.momoPhone ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                                                />
+                                                {errors.momoPhone && (
+                                                    <p className="mt-1 text-sm text-red-500">{errors.momoPhone}</p>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-700">
+                                                Sau khi đặt hàng, bạn sẽ nhận được hướng dẫn thanh toán qua MoMo.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -352,15 +602,15 @@ const Checkout = () => {
                                         <div className="flex items-center">
                                             <input
                                                 id="standard"
-                                                name="shipMethod"
+                                                name="shippingMethod"
                                                 type="radio"
                                                 value="standard"
-                                                checked={formData.shipMethod === 'standard'}
+                                                checked={formData.shippingMethod === 'standard'}
                                                 onChange={handleChange}
                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                             />
                                             <label htmlFor="standard" className="ml-3 block text-sm font-medium text-gray-700">
-                                                Giao hàng tiêu chuẩn (2-3 ngày)
+                                                Giao hàng tiêu chuẩn (3-5 ngày)
                                             </label>
                                         </div>
                                         <span className="text-gray-900 font-medium">
@@ -372,10 +622,10 @@ const Checkout = () => {
                                         <div className="flex items-center">
                                             <input
                                                 id="express"
-                                                name="shipMethod"
+                                                name="shippingMethod"
                                                 type="radio"
                                                 value="express"
-                                                checked={formData.shipMethod === 'express'}
+                                                checked={formData.shippingMethod === 'express'}
                                                 onChange={handleChange}
                                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                             />
@@ -410,18 +660,18 @@ const Checkout = () => {
                                             />
                                         </div>
                                         <div className="ml-4 flex flex-col">
-                                            <span className="text-sm font-medium text-gray-900">{item.name}</span>
+                                            <span className="text-sm font-medium text-gray-900">{item.name || 'Sản phẩm không có tên'}</span>
                                             <span className="text-sm text-gray-500">
                                                 {item.color && `${item.color}, `}
                                                 {item.size && item.size}
                                             </span>
                                             <span className="text-sm text-gray-500">
-                                                {item.quantity} x {item.price.toLocaleString('vi-VN')} đ
+                                                {item.quantity || 1} x {formatPrice(item.price)} đ
                                             </span>
                                         </div>
                                     </div>
                                     <span className="text-sm font-medium text-gray-900">
-                                        {(item.price * item.quantity).toLocaleString('vi-VN')} đ
+                                        {formatPrice((item.price || 0) * (item.quantity || 1))} đ
                                     </span>
                                 </div>
                             ))}
@@ -430,18 +680,18 @@ const Checkout = () => {
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Tạm tính</span>
-                                <span className="font-medium">{totalAmount.toLocaleString('vi-VN')} đ</span>
+                                <span className="font-medium">{formatPrice(totalAmount)} đ</span>
                             </div>
 
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Phí vận chuyển</span>
-                                <span className="font-medium">{shippingFee.toLocaleString('vi-VN')} đ</span>
+                                <span className="font-medium">{formatPrice(shippingFee)} đ</span>
                             </div>
 
                             <div className="flex justify-between border-t border-gray-200 pt-2 mt-2">
                                 <span className="text-gray-800 font-medium">Tổng cộng</span>
                                 <span className="text-xl font-bold text-red-600">
-                                    {(totalAmount + shippingFee).toLocaleString('vi-VN')} đ
+                                    {formatPrice(totalAmount + shippingFee)} đ
                                 </span>
                             </div>
                         </div>

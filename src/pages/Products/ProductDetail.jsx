@@ -2,18 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProductById } from '../../store/slices/productSlice';
-import { addToCart } from '../../store/slices/cartSlice';
+import { addToCartAsync } from '../../store/slices/cartSlice';
 import { StarIcon, ShoppingCartIcon } from '@heroicons/react/solid';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/outline';
+import ProductReviewForm from './ProductReviewForm';
 
 const ProductDetail = () => {
     const { id } = useParams();
     const dispatch = useDispatch();
     const { product, loading, error } = useSelector(state => state.products);
+    const { isAuthenticated } = useSelector(state => state.auth);
 
     const [selectedVariant, setSelectedVariant] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    const [showReviewForm, setShowReviewForm] = useState(false);
 
     // Lưu trữ các màu và kích thước có sẵn
     const [colors, setColors] = useState([]);
@@ -104,7 +107,7 @@ const ProductDetail = () => {
 
     const handleAddToCart = () => {
         if (selectedVariant) {
-            dispatch(addToCart({
+            dispatch(addToCartAsync({
                 productId: product.id,
                 variantId: selectedVariant.id,
                 name: product.name,
@@ -129,6 +132,12 @@ const ProductDetail = () => {
         setActiveImageIndex((prev) =>
             prev === product.images.length - 1 ? 0 : prev + 1
         );
+    };
+
+    const handleReviewSubmitSuccess = () => {
+        setShowReviewForm(false);
+        // Tải lại thông tin sản phẩm để cập nhật đánh giá
+        dispatch(fetchProductById(parseInt(id)));
     };
 
     if (loading) {
@@ -395,18 +404,70 @@ const ProductDetail = () => {
 
             {/* Phần đánh giá sản phẩm */}
             <div className="mt-12">
-                <h2 className="text-xl font-bold mb-4">Đánh giá sản phẩm</h2>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Đánh giá sản phẩm</h2>
+                    {!showReviewForm && (
+                        <button 
+                            onClick={() => setShowReviewForm(true)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        >
+                            Viết đánh giá
+                        </button>
+                    )}
+                </div>
 
-                {product.reviewCount > 0 ? (
-                    <div className="bg-white rounded-lg p-6 shadow-sm">
-                        <p>Sẽ hiển thị đánh giá sản phẩm ở đây...</p>
+                {showReviewForm && (
+                    <div className="mb-8">
+                        <ProductReviewForm 
+                            productId={parseInt(id)} 
+                            onSubmitSuccess={handleReviewSubmitSuccess} 
+                        />
+                    </div>
+                )}
+
+                {/* Danh sách đánh giá */}
+                {product.reviews && product.reviews.length > 0 ? (
+                    <div className="bg-white rounded-lg shadow-sm divide-y">
+                        {product.reviews.map((review, index) => (
+                            <div key={index} className="p-6">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h3 className="font-medium text-gray-900">{review.title}</h3>
+                                        <div className="flex items-center mt-1">
+                                            <div className="flex text-yellow-400">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <StarIcon key={i} className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`} />
+                                                ))}
+                                            </div>
+                                            <span className="ml-2 text-sm text-gray-500">{review.author}</span>
+                                        </div>
+                                    </div>
+                                    <span className="text-sm text-gray-500">
+                                        {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-gray-600">{review.content}</p>
+                                
+                                {/* Hiển thị ảnh nếu có */}
+                                {review.images && review.images.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {review.images.map((image, imgIndex) => (
+                                            <img 
+                                                key={imgIndex} 
+                                                src={image} 
+                                                alt={`Đánh giá ${index + 1} - Hình ${imgIndex + 1}`} 
+                                                className="h-16 w-16 object-cover rounded-md" 
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="bg-gray-100 rounded-lg p-6 text-center">
                         <p className="text-gray-600">Sản phẩm chưa có đánh giá.</p>
-                        <button className="mt-2 text-blue-600 hover:text-blue-800">
-                            Đánh giá sản phẩm này
-                        </button>
+                        <p className="mt-2 text-gray-600">Hãy trở thành người đầu tiên đánh giá sản phẩm này!</p>
                     </div>
                 )}
             </div>

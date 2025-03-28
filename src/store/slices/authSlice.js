@@ -29,7 +29,17 @@ export const registerUser = createAsyncThunk(
 );
 
 const initialState = {
-    user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null,
+    user: (() => {
+        const userData = localStorage.getItem('user');
+        if (!userData || userData === 'undefined') return null;
+        try {
+            return JSON.parse(userData);
+        } catch (error) {
+            // Xóa dữ liệu không hợp lệ
+            localStorage.removeItem('user');
+            return null;
+        }
+    })(),
     token: localStorage.getItem('token') || null,
     isAuthenticated: !!localStorage.getItem('token'),
     loading: false,
@@ -66,12 +76,29 @@ export const authSlice = createSlice({
             })
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.loading = false;
-                state.user = action.payload.user;
-                state.token = action.payload.accessToken;
-                state.isAuthenticated = true;
+                
+                // Kiểm tra cấu trúc dữ liệu trước khi truy cập
+                if (action.payload && action.payload.data) {
+                    // Cấu trúc data.user và accessToken từ API
+                    state.user = action.payload.data.user;
+                    state.token = action.payload.data.accessToken;
+                    state.isAuthenticated = true;
 
-                localStorage.setItem('user', JSON.stringify(action.payload.user));
-                localStorage.setItem('token', action.payload.accessToken);
+                    localStorage.setItem('user', JSON.stringify(action.payload.data.user));
+                    localStorage.setItem('token', action.payload.data.accessToken);
+                } else if (action.payload && action.payload.user) {
+                    // Cấu trúc trực tiếp với user và accessToken
+                    state.user = action.payload.user;
+                    state.token = action.payload.accessToken;
+                    state.isAuthenticated = true;
+
+                    localStorage.setItem('user', JSON.stringify(action.payload.user));
+                    localStorage.setItem('token', action.payload.accessToken);
+                } else {
+                    // Log lỗi nếu không tìm thấy cấu trúc phù hợp
+                    console.error('Cấu trúc phản hồi không đúng:', action.payload);
+                    state.error = 'Định dạng phản hồi từ server không đúng';
+                }
             })
             .addCase(loginUser.rejected, (state, action) => {
                 state.loading = false;

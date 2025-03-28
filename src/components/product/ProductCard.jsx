@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { addToCart } from '../../store/slices/cartSlice';
+import { addToCartAsync } from '../../store/slices/cartSlice';
 
 const ProductCard = ({ product }) => {
     const dispatch = useDispatch();
@@ -10,7 +10,7 @@ const ProductCard = ({ product }) => {
         e.preventDefault();
         e.stopPropagation();
 
-        dispatch(addToCart({
+        dispatch(addToCartAsync({
             productId: product.id,
             variantId: product.variants && product.variants.length > 0 ? product.variants[0].id : 1,
             name: product.name,

@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { productService } from '../../services';
 
 // Các hàm async thunk để lấy dữ liệu sản phẩm
 // Trong giai đoạn đầu này, sẽ sử dụng dữ liệu mẫu
@@ -6,88 +7,12 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 // Lấy danh sách sản phẩm
 export const fetchProducts = createAsyncThunk(
     'products/fetchProducts',
-    async (_, { rejectWithValue }) => {
+    async ({ page = 0, size = 12, sortBy = 'id', sortDir = 'desc' }, { rejectWithValue }) => {
         try {
-            // Mô phỏng gọi API
-            const response = await new Promise(resolve => {
-                setTimeout(() => {
-                    resolve({
-                        data: {
-                            content: [
-                                {
-                                    id: 1,
-                                    name: "Áo thun nam basic",
-                                    basePrice: 250000,
-                                    image: "https://via.placeholder.com/300x300?text=T-Shirt+1",
-                                    categoryName: "Áo nam",
-                                    brandName: "Nike",
-                                    averageRating: 4.5,
-                                    reviewCount: 12
-                                },
-                                {
-                                    id: 2,
-                                    name: "Quần jeans nữ rách gối",
-                                    basePrice: 450000,
-                                    image: "https://via.placeholder.com/300x300?text=Jeans+1",
-                                    categoryName: "Quần nữ",
-                                    brandName: "Zara",
-                                    averageRating: 4.2,
-                                    reviewCount: 8
-                                },
-                                {
-                                    id: 3,
-                                    name: "Áo khoác nữ dáng rộng",
-                                    basePrice: 650000,
-                                    image: "https://via.placeholder.com/300x300?text=Jacket+1",
-                                    categoryName: "Áo khoác nữ",
-                                    brandName: "H&M",
-                                    averageRating: 4.7,
-                                    reviewCount: 15
-                                },
-                                {
-                                    id: 4,
-                                    name: "Giày thể thao nam",
-                                    basePrice: 850000,
-                                    image: "https://via.placeholder.com/300x300?text=Shoes+1",
-                                    categoryName: "Giày nam",
-                                    brandName: "Adidas",
-                                    averageRating: 4.8,
-                                    reviewCount: 22
-                                },
-                                {
-                                    id: 5,
-                                    name: "Áo sơ mi nam kẻ sọc",
-                                    basePrice: 350000,
-                                    image: "https://via.placeholder.com/300x300?text=Shirt+1",
-                                    categoryName: "Áo nam",
-                                    brandName: "Uniqlo",
-                                    averageRating: 4.3,
-                                    reviewCount: 9
-                                },
-                                {
-                                    id: 6,
-                                    name: "Váy đầm nữ công sở",
-                                    basePrice: 550000,
-                                    image: "https://via.placeholder.com/300x300?text=Dress+1",
-                                    categoryName: "Váy đầm",
-                                    brandName: "Zara",
-                                    averageRating: 4.6,
-                                    reviewCount: 17
-                                }
-                            ],
-                            totalElements: 6,
-                            totalPages: 1,
-                            page: 0,
-                            size: 10,
-                            last: true
-                        }
-                    });
-                }, 500);
-            });
-
-            return response.data;
+            const response = await productService.getAllProducts(page, size, sortBy, sortDir);
+            return response.data.data;
         } catch (error) {
-            return rejectWithValue(error.response.data);
+            return rejectWithValue(error.response?.data || error.message);
         }
     }
 );
@@ -97,98 +22,135 @@ export const fetchProductById = createAsyncThunk(
     'products/fetchProductById',
     async (id, { rejectWithValue }) => {
         try {
-            // Mô phỏng gọi API
-            const response = await new Promise(resolve => {
-                setTimeout(() => {
-                    resolve({
-                        data: {
-                            id: id,
-                            name: "Áo thun nam basic",
-                            description: "Áo thun nam chất liệu cotton 100%, thấm hút mồ hôi tốt, thiết kế basic phù hợp với mọi dáng người.",
-                            basePrice: 250000,
-                            image: "https://via.placeholder.com/300x300?text=T-Shirt+1",
-                            categoryId: 1,
-                            categoryName: "Áo nam",
-                            brandId: 1,
-                            brandName: "Nike",
-                            averageRating: 4.5,
-                            reviewCount: 12,
-                            images: [
-                                "https://via.placeholder.com/800x600?text=T-Shirt+Main",
-                                "https://via.placeholder.com/800x600?text=T-Shirt+Front",
-                                "https://via.placeholder.com/800x600?text=T-Shirt+Back",
-                                "https://via.placeholder.com/800x600?text=T-Shirt+Detail"
-                            ],
-                            variants: [
-                                {
-                                    id: 1,
-                                    color: "Trắng",
-                                    size: "S",
-                                    stockQuantity: 15,
-                                    priceAdjustment: 0,
-                                    finalPrice: 250000,
-                                    image: "https://via.placeholder.com/100x100?text=White+S"
-                                },
-                                {
-                                    id: 2,
-                                    color: "Trắng",
-                                    size: "M",
-                                    stockQuantity: 20,
-                                    priceAdjustment: 0,
-                                    finalPrice: 250000,
-                                    image: "https://via.placeholder.com/100x100?text=White+M"
-                                },
-                                {
-                                    id: 3,
-                                    color: "Trắng",
-                                    size: "L",
-                                    stockQuantity: 18,
-                                    priceAdjustment: 0,
-                                    finalPrice: 250000,
-                                    image: "https://via.placeholder.com/100x100?text=White+L"
-                                },
-                                {
-                                    id: 4,
-                                    color: "Đen",
-                                    size: "S",
-                                    stockQuantity: 12,
-                                    priceAdjustment: 0,
-                                    finalPrice: 250000,
-                                    image: "https://via.placeholder.com/100x100?text=Black+S"
-                                },
-                                {
-                                    id: 5,
-                                    color: "Đen",
-                                    size: "M",
-                                    stockQuantity: 22,
-                                    priceAdjustment: 0,
-                                    finalPrice: 250000,
-                                    image: "https://via.placeholder.com/100x100?text=Black+M"
-                                },
-                                {
-                                    id: 6,
-                                    color: "Đen",
-                                    size: "L",
-                                    stockQuantity: 16,
-                                    priceAdjustment: 0,
-                                    finalPrice: 250000,
-                                    image: "https://via.placeholder.com/100x100?text=Black+L"
-                                }
-                            ]
-                        }
-                    });
-                }, 500);
-            });
-
-            return response.data;
+            const response = await productService.getProductById(id);
+            return response.data.data;
         } catch (error) {
-            return rejectWithValue(error.response.data);
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+// Lấy sản phẩm theo danh mục
+export const fetchProductsByCategory = createAsyncThunk(
+    'products/fetchProductsByCategory',
+    async ({ categoryId, page = 0, size = 12 }, { rejectWithValue }) => {
+        try {
+            const response = await productService.getProductsByCategory(categoryId, page, size);
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+// Lấy sản phẩm theo thương hiệu
+export const fetchProductsByBrand = createAsyncThunk(
+    'products/fetchProductsByBrand',
+    async ({ brandId, page = 0, size = 12 }, { rejectWithValue }) => {
+        try {
+            const response = await productService.getProductsByBrand(brandId, page, size);
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+// Tìm kiếm sản phẩm
+export const searchProducts = createAsyncThunk(
+    'products/searchProducts',
+    async ({ keyword, page = 0, size = 12 }, { rejectWithValue }) => {
+        try {
+            const response = await productService.searchProducts(keyword, page, size);
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+// Lọc sản phẩm theo giá
+export const filterProductsByPrice = createAsyncThunk(
+    'products/filterProductsByPrice',
+    async ({ minPrice, maxPrice, page = 0, size = 12 }, { rejectWithValue }) => {
+        try {
+            const response = await productService.filterProductsByPrice(minPrice, maxPrice, page, size);
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+// Lấy sản phẩm mới
+export const fetchNewArrivals = createAsyncThunk(
+    'products/fetchNewArrivals',
+    async (limit = 8, { rejectWithValue }) => {
+        try {
+            const response = await productService.getNewArrivals(limit);
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+// Lấy sản phẩm được đánh giá cao
+export const fetchTopRatedProducts = createAsyncThunk(
+    'products/fetchTopRatedProducts',
+    async (limit = 8, { rejectWithValue }) => {
+        try {
+            const response = await productService.getTopRatedProducts(limit);
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+// Admin: Tạo sản phẩm mới
+export const createProduct = createAsyncThunk(
+    'products/createProduct',
+    async (productData, { rejectWithValue }) => {
+        try {
+            const response = await productService.createProduct(productData);
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+// Admin: Cập nhật sản phẩm
+export const updateProduct = createAsyncThunk(
+    'products/updateProduct',
+    async ({ id, productData }, { rejectWithValue }) => {
+        try {
+            const response = await productService.updateProduct(id, productData);
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+// Admin: Xóa sản phẩm
+export const deleteProduct = createAsyncThunk(
+    'products/deleteProduct',
+    async (id, { rejectWithValue }) => {
+        try {
+            await productService.deleteProduct(id);
+            return id;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
         }
     }
 );
 
 const initialState = {
     products: [],
+    newArrivals: [],
+    topRated: [],
     product: null,
     loading: false,
     error: null,
@@ -196,7 +158,7 @@ const initialState = {
         totalElements: 0,
         totalPages: 0,
         page: 0,
-        size: 10,
+        size: 12,
         last: true
     }
 };
@@ -204,7 +166,14 @@ const initialState = {
 const productSlice = createSlice({
     name: 'products',
     initialState,
-    reducers: {},
+    reducers: {
+        clearProductError: (state) => {
+            state.error = null;
+        },
+        clearProductDetail: (state) => {
+            state.product = null;
+        }
+    },
     extraReducers: (builder) => {
         builder
             // Xử lý fetchProducts
@@ -225,7 +194,7 @@ const productSlice = createSlice({
             })
             .addCase(fetchProducts.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload || 'Không thể tải danh sách sản phẩm';
+                state.error = action.payload?.message || 'Không thể tải danh sách sản phẩm';
             })
 
             // Xử lý fetchProductById
@@ -239,9 +208,174 @@ const productSlice = createSlice({
             })
             .addCase(fetchProductById.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload || 'Không thể tải thông tin sản phẩm';
+                state.error = action.payload?.message || 'Không thể tải thông tin sản phẩm';
+            })
+
+            // Xử lý fetchProductsByCategory
+            .addCase(fetchProductsByCategory.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchProductsByCategory.fulfilled, (state, action) => {
+                state.loading = false;
+                state.products = action.payload.content;
+                state.pagination = {
+                    totalElements: action.payload.totalElements,
+                    totalPages: action.payload.totalPages,
+                    page: action.payload.page,
+                    size: action.payload.size,
+                    last: action.payload.last
+                };
+            })
+            .addCase(fetchProductsByCategory.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể tải sản phẩm theo danh mục';
+            })
+
+            // Xử lý fetchProductsByBrand
+            .addCase(fetchProductsByBrand.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchProductsByBrand.fulfilled, (state, action) => {
+                state.loading = false;
+                state.products = action.payload.content;
+                state.pagination = {
+                    totalElements: action.payload.totalElements,
+                    totalPages: action.payload.totalPages,
+                    page: action.payload.page,
+                    size: action.payload.size,
+                    last: action.payload.last
+                };
+            })
+            .addCase(fetchProductsByBrand.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể tải sản phẩm theo thương hiệu';
+            })
+
+            // Xử lý searchProducts
+            .addCase(searchProducts.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(searchProducts.fulfilled, (state, action) => {
+                state.loading = false;
+                state.products = action.payload.content;
+                state.pagination = {
+                    totalElements: action.payload.totalElements,
+                    totalPages: action.payload.totalPages,
+                    page: action.payload.page,
+                    size: action.payload.size,
+                    last: action.payload.last
+                };
+            })
+            .addCase(searchProducts.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể tìm kiếm sản phẩm';
+            })
+
+            // Xử lý filterProductsByPrice
+            .addCase(filterProductsByPrice.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(filterProductsByPrice.fulfilled, (state, action) => {
+                state.loading = false;
+                state.products = action.payload.content;
+                state.pagination = {
+                    totalElements: action.payload.totalElements,
+                    totalPages: action.payload.totalPages,
+                    page: action.payload.page,
+                    size: action.payload.size,
+                    last: action.payload.last
+                };
+            })
+            .addCase(filterProductsByPrice.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể lọc sản phẩm theo giá';
+            })
+
+            // Xử lý fetchNewArrivals
+            .addCase(fetchNewArrivals.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchNewArrivals.fulfilled, (state, action) => {
+                state.loading = false;
+                state.newArrivals = action.payload;
+            })
+            .addCase(fetchNewArrivals.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể tải sản phẩm mới';
+            })
+
+            // Xử lý fetchTopRatedProducts
+            .addCase(fetchTopRatedProducts.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchTopRatedProducts.fulfilled, (state, action) => {
+                state.loading = false;
+                state.topRated = action.payload;
+            })
+            .addCase(fetchTopRatedProducts.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể tải sản phẩm đánh giá cao';
+            })
+
+            // Admin: Xử lý createProduct
+            .addCase(createProduct.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(createProduct.fulfilled, (state, action) => {
+                state.loading = false;
+                state.products.unshift(action.payload);
+            })
+            .addCase(createProduct.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể tạo sản phẩm mới';
+            })
+
+            // Admin: Xử lý updateProduct
+            .addCase(updateProduct.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateProduct.fulfilled, (state, action) => {
+                state.loading = false;
+                const index = state.products.findIndex(p => p.id === action.payload.id);
+                if (index !== -1) {
+                    state.products[index] = action.payload;
+                }
+                if (state.product && state.product.id === action.payload.id) {
+                    state.product = action.payload;
+                }
+            })
+            .addCase(updateProduct.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể cập nhật sản phẩm';
+            })
+
+            // Admin: Xử lý deleteProduct
+            .addCase(deleteProduct.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(deleteProduct.fulfilled, (state, action) => {
+                state.loading = false;
+                state.products = state.products.filter(p => p.id !== action.payload);
+                if (state.product && state.product.id === action.payload) {
+                    state.product = null;
+                }
+            })
+            .addCase(deleteProduct.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể xóa sản phẩm';
             });
     }
 });
+
+export const { clearProductError, clearProductDetail } = productSlice.actions;
 
 export default productSlice.reducer;

@@ -1,31 +1,44 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { removeFromCart, updateQuantity, clearCart } from '../../store/slices/cartSlice';
+import { removeFromCartAsync, updateCartItemAsync, clearCartAsync, fetchCart } from '../../store/slices/cartSlice';
 import { TrashIcon, XIcon } from '@heroicons/react/outline';
+
+// Hàm tiện ích để format giá
+const formatPrice = (price) => {
+    if (price === undefined || price === null) {
+        return '0';
+    }
+    return price.toLocaleString('vi-VN');
+};
 
 const Cart = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const { items, totalQuantity, totalAmount } = useSelector(state => state.cart);
+    const { items, totalQuantity, totalAmount, loading } = useSelector(state => state.cart);
     const { isAuthenticated } = useSelector(state => state.auth);
+
+    useEffect(() => {
+        // Lấy dữ liệu giỏ hàng từ server khi component được tải
+        dispatch(fetchCart());
+    }, [dispatch]);
 
     const handleRemoveItem = (cartItemId) => {
         if (window.confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?')) {
-            dispatch(removeFromCart({ cartItemId }));
+            dispatch(removeFromCartAsync(cartItemId));
         }
     };
 
     const handleUpdateQuantity = (cartItemId, newQuantity) => {
         if (newQuantity > 0) {
-            dispatch(updateQuantity({ cartItemId, quantity: newQuantity }));
+            dispatch(updateCartItemAsync({ cartItemId, quantity: newQuantity }));
         }
     };
 
     const handleClearCart = () => {
         if (window.confirm('Bạn có chắc muốn xóa tất cả sản phẩm khỏi giỏ hàng?')) {
-            dispatch(clearCart());
+            dispatch(clearCartAsync());
         }
     };
 
@@ -38,6 +51,17 @@ const Cart = () => {
             }
         }
     };
+
+    if (loading) {
+        return (
+            <div className="container mx-auto px-4 py-8 text-center">
+                <h1 className="text-2xl font-bold mb-8">Giỏ hàng</h1>
+                <div className="bg-white rounded-lg shadow-sm p-8">
+                    <p className="text-xl text-gray-600">Đang tải giỏ hàng...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (items.length === 0) {
         return (
@@ -59,7 +83,7 @@ const Cart = () => {
 
     return (
         <div className="container mx-auto px-4 py-8">
-            <h1 className="text-2xl font-bold mb-8">Giỏ hàng ({totalQuantity} sản phẩm)</h1>
+            <h1 className="text-2xl font-bold mb-8">Giỏ hàng ({totalQuantity || 0} sản phẩm)</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Danh sách sản phẩm */}
@@ -86,7 +110,7 @@ const Cart = () => {
                             </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                            {items.map((item) => (
+                            {items && items.map((item) => (
                                 <tr key={item.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
@@ -94,13 +118,13 @@ const Cart = () => {
                                                 <img
                                                     className="h-16 w-16 object-cover"
                                                     src={item.image || 'https://via.placeholder.com/150'}
-                                                    alt={item.name}
+                                                    alt={item.name || 'Sản phẩm'}
                                                 />
                                             </div>
                                             <div className="ml-4">
                                                 <div className="text-sm font-medium text-gray-900">
                                                     <Link to={`/products/${item.productId}`} className="hover:text-blue-600">
-                                                        {item.name}
+                                                        {item.name || 'Sản phẩm không có tên'}
                                                     </Link>
                                                 </div>
                                                 <div className="text-sm text-gray-500">
@@ -108,18 +132,18 @@ const Cart = () => {
                                                     {item.size && <span className="ml-2">Size: {item.size}</span>}
                                                 </div>
                                                 <div className="md:hidden text-sm font-medium text-gray-900 mt-1">
-                                                    {item.price.toLocaleString('vi-VN')} đ
+                                                    {formatPrice(item.price)} đ
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                                        <div className="text-sm text-gray-900">{item.price.toLocaleString('vi-VN')} đ</div>
+                                        <div className="text-sm text-gray-900">{formatPrice(item.price)} đ</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <button
-                                                onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                                onClick={() => handleUpdateQuantity(item.id, (item.quantity || 1) - 1)}
                                                 className="px-2 py-1 border rounded-l"
                                             >
                                                 -
@@ -127,7 +151,7 @@ const Cart = () => {
                                             <input
                                                 type="number"
                                                 min="1"
-                                                value={item.quantity}
+                                                value={item.quantity || 1}
                                                 onChange={(e) => {
                                                     const value = parseInt(e.target.value);
                                                     if (!isNaN(value) && value >= 1) {
@@ -137,7 +161,7 @@ const Cart = () => {
                                                 className="w-12 text-center border-t border-b"
                                             />
                                             <button
-                                                onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                                onClick={() => handleUpdateQuantity(item.id, (item.quantity || 1) + 1)}
                                                 className="px-2 py-1 border rounded-r"
                                             >
                                                 +
@@ -146,7 +170,7 @@ const Cart = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                                         <div className="text-sm font-medium text-gray-900">
-                                            {(item.price * item.quantity).toLocaleString('vi-VN')} đ
+                                            {formatPrice((item.price || 0) * (item.quantity || 1))} đ
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -189,7 +213,7 @@ const Cart = () => {
                         <div className="space-y-4">
                             <div className="flex justify-between border-b pb-2">
                                 <span className="text-gray-600">Tạm tính</span>
-                                <span className="font-medium">{totalAmount.toLocaleString('vi-VN')} đ</span>
+                                <span className="font-medium">{formatPrice(totalAmount)} đ</span>
                             </div>
 
                             <div className="flex justify-between border-b pb-2">
@@ -199,7 +223,7 @@ const Cart = () => {
 
                             <div className="flex justify-between">
                                 <span className="text-gray-800 font-medium">Tổng cộng</span>
-                                <span className="text-xl font-bold text-red-600">{totalAmount.toLocaleString('vi-VN')} đ</span>
+                                <span className="text-xl font-bold text-red-600">{formatPrice(totalAmount)} đ</span>
                             </div>
 
                             <div className="pt-4">

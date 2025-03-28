@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { SearchIcon, ShoppingCartIcon, UserIcon, LogoutIcon, MenuIcon } from '@heroicons/react/outline';
+import authService from '../../services/authService';
 
 const Header = () => {
     const dispatch = useDispatch();
@@ -10,14 +11,19 @@ const Header = () => {
     const { isAuthenticated, user } = useSelector((state) => state.auth);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const navigate = useNavigate();
+
+    // Kiểm tra xem người dùng có phải là admin không
+    const isAdmin = isAuthenticated && user && authService.isAdmin(user);
 
     const handleLogout = () => {
         dispatch(logout());
         setDropdownOpen(false);
+        navigate('/');
     };
 
     return (
-        <header className="bg-white shadow-md">
+        <header className="bg-white shadow-md sticky top-0 z-10">
             <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                 <Link to="/" className="text-2xl font-bold flex items-center">
                     <span>Fashion Store</span>
@@ -53,6 +59,16 @@ const Header = () => {
                             </span>
                         )}
                     </Link>
+
+                    {/* Hiển thị link Admin Dashboard nếu là admin */}
+                    {isAdmin && (
+                        <Link 
+                            to="/admin" 
+                            className="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-md"
+                        >
+                            Quản lý
+                        </Link>
+                    )}
 
                     {isAuthenticated ? (
                         <div className="relative">

@@ -38,7 +38,7 @@ const OrderSuccess = () => {
                     </Link>
 
                     <Link
-                        to="/orders"
+                        to="/account/orders"
                         className="px-6 py-3 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 transition-colors"
                     >
                         Xem đơn hàng
