@@ -7,12 +7,43 @@ import { productService } from '../../services';
 // Lấy danh sách sản phẩm
 export const fetchProducts = createAsyncThunk(
     'products/fetchProducts',
-    async ({ page = 0, size = 12, sortBy = 'id', sortDir = 'desc' }, { rejectWithValue }) => {
+    async (params = {}, { rejectWithValue }) => {
         try {
-            const response = await productService.getAllProducts(page, size, sortBy, sortDir);
+            const { 
+                page = 0, 
+                size = 12, 
+                sortBy = 'id', 
+                sortDir = 'desc',
+                categoryId,
+                brandId,
+                minPrice,
+                maxPrice 
+            } = params;
+            
+            // Xác định endpoint phù hợp dựa trên tham số đầu vào
+            let response;
+            
+            if (categoryId) {
+                response = await productService.getProductsByCategory(categoryId, page, size);
+            } else if (brandId) {
+                response = await productService.getProductsByBrand(brandId, page, size);
+            } else if (minPrice !== undefined && maxPrice !== undefined) {
+                response = await productService.filterProductsByPrice(minPrice, maxPrice, page, size);
+            } else {
+                response = await productService.getAllProducts(page, size, sortBy, sortDir);
+            }
+            
+            console.log('API Response:', response);
+            
+            // Đảm bảo response.data.data tồn tại
+            if (!response.data || !response.data.data) {
+                return rejectWithValue('Cấu trúc dữ liệu không hợp lệ');
+            }
+            
             return response.data.data;
         } catch (error) {
-            return rejectWithValue(error.response?.data || error.message);
+            console.error('Error fetching products:', error);
+            return rejectWithValue(error.response?.data || { message: error.message || 'Lỗi không xác định khi tải sản phẩm' });
         }
     }
 );

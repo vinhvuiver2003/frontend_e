@@ -22,7 +22,16 @@ const ProductList = () => {
     const sortDir = searchParams.get('sortDir') || 'desc';
 
     useEffect(() => {
-        dispatch(fetchProducts());
+        dispatch(fetchProducts({
+            page,
+            size,
+            sortBy,
+            sortDir,
+            ...(category && { categoryId: category }),
+            ...(brand && { brandId: brand }),
+            ...(minPrice > 0 && { minPrice }),
+            ...(maxPrice > 0 && { maxPrice })
+        }));
     }, [dispatch, category, brand, page, size, minPrice, maxPrice, sortBy, sortDir]);
 
     const handleFilterChange = (e) => {
@@ -255,10 +264,16 @@ const ProductList = () => {
                 <div className="flex-1">
                     <div className="flex justify-between items-center mb-6">
                         <h1 className="text-2xl font-bold">Sản phẩm</h1>
-                        <p className="text-gray-600">Hiển thị {products.length} / {pagination.totalElements} sản phẩm</p>
+                        <p className="text-gray-600">
+                            {loading ? 'Đang tải...' : `Hiển thị ${products.length} / ${pagination.totalElements || 0} sản phẩm`}
+                        </p>
                     </div>
 
-                    {products.length === 0 ? (
+                    {loading && products.length === 0 ? (
+                        <div className="flex justify-center items-center h-64">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                        </div>
+                    ) : products.length === 0 ? (
                         <div className="bg-gray-100 rounded-lg p-8 text-center">
                             <p className="text-gray-600">Không tìm thấy sản phẩm phù hợp.</p>
                         </div>
@@ -270,8 +285,14 @@ const ProductList = () => {
                                 ))}
                             </div>
 
+                            {loading && (
+                                <div className="flex justify-center mt-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                                </div>
+                            )}
+
                             {/* Phân trang */}
-                            {pagination.totalPages > 1 && (
+                            {!loading && pagination.totalPages > 1 && (
                                 <div className="flex justify-center mt-8">
                                     <nav className="inline-flex rounded-md shadow">
                                         <button
