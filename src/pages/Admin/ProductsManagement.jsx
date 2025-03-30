@@ -9,41 +9,80 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/react/outline';
+import { fetchAllProducts, deleteProduct } from '../../store/slices/productSlice';
+import { API_URL } from '../../config';
 
 const ProductsManagement = () => {
   const dispatch = useDispatch();
+  const { products: storeProducts, loading: storeLoading, error } = useSelector(state => state.products);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
+  const [categories, setCategories] = useState([]);
 
-  // Dữ liệu mẫu cho danh sách sản phẩm
+  // Lấy danh sách danh mục
+  useEffect(() => {
+    fetch(`${API_URL}/categories`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.data && data.data.content) {
+          setCategories(data.data.content);
+        }
+      })
+      .catch(error => console.error('Lỗi khi tải danh mục:', error));
+  }, []);
+
+  // Lấy danh sách sản phẩm từ API
   useEffect(() => {
     setLoading(true);
     
-    // Trong thực tế, nên gọi API để lấy dữ liệu sản phẩm
-    // Đây là dữ liệu giả để hiển thị
-    setTimeout(() => {
-      const sampleProducts = Array(20).fill().map((_, index) => ({
-        id: index + 1,
-        name: `Sản phẩm mẫu ${index + 1}`,
-        price: Math.floor(Math.random() * 10000000) + 500000,
-        stockQuantity: Math.floor(Math.random() * 100),
-        category: index % 3 === 0 ? 'Điện thoại' : index % 3 === 1 ? 'Laptop' : 'Phụ kiện',
-        imageUrl: 'https://via.placeholder.com/150',
-        status: index % 5 === 0 ? 'out_of_stock' : 'active',
-        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
-      }));
-      
-      setProducts(sampleProducts);
-      setTotalPages(4); // Giả sử có 4 trang
-      setLoading(false);
-    }, 500);
+    const params = new URLSearchParams();
+    params.append('page', currentPage);
+    params.append('size', 10);
+    
+    if (searchTerm) {
+      params.append('keyword', searchTerm);
+    }
+    
+    if (selectedCategory) {
+      params.append('categoryId', selectedCategory);
+    }
+    
+    // Gọi API để lấy sản phẩm
+    fetch(`${API_URL}/products?${params.toString()}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setProducts(data.data.content || []);
+          setTotalPages(data.data.totalPages || 0);
+          setTotalItems(data.data.totalElements || 0);
+        } else {
+          console.error('Lỗi khi tải sản phẩm:', data.message);
+          setProducts([]);
+          setTotalPages(0);
+          setTotalItems(0);
+        }
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Lỗi khi tải sản phẩm:', error);
+        setLoading(false);
+        setProducts([]);
+        setTotalPages(0);
+        setTotalItems(0);
+      });
   }, [currentPage, searchTerm, selectedCategory]);
+
+  // Xử lý tìm kiếm
+  const handleSearch = () => {
+    setCurrentPage(0); // Reset về trang đầu tiên khi tìm kiếm
+  };
 
   // Xử lý xóa sản phẩm
   const handleDeleteClick = (product) => {
@@ -51,17 +90,71 @@ const ProductsManagement = () => {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
-    // Thực hiện xóa sản phẩm
-    setProducts(products.filter(p => p.id !== productToDelete.id));
-    setShowDeleteModal(false);
-    setProductToDelete(null);
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    try {
+      setLoading(true);
+      // Xóa sản phẩm qua API
+      const response = await fetch(`${API_URL}/products/${productToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        // Cập nhật danh sách sản phẩm
+        setProducts(products.filter(p => p.id !== productToDelete.id));
+        setShowDeleteModal(false);
+        setProductToDelete(null);
+      } else {
+        const errorData = await response.json();
+        console.error('Lỗi khi xóa sản phẩm:', errorData.message);
+        alert(`Lỗi: ${errorData.message || 'Không thể xóa sản phẩm'}`);
+      }
+    } catch (error) {
+      console.error('Lỗi khi xóa sản phẩm:', error);
+      alert('Lỗi: Không thể kết nối đến máy chủ');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Format giá tiền
   const formatPrice = (price) => {
     if (price === undefined || price === null) return '0';
     return price.toLocaleString('vi-VN') + '₫';
+  };
+
+  // Lấy URL ảnh hoàn chỉnh
+  const getImageUrl = (url) => {
+    if (!url) return 'https://via.placeholder.com/150';
+    if (url.startsWith('http')) return url;
+    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
+  // Lấy tên danh mục từ ID
+  const getCategoryName = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category ? category.name : 'Không xác định';
+  };
+
+  // Định dạng trạng thái sản phẩm
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'active':
+        return { text: 'Hoạt động', class: 'bg-green-100 text-green-800' };
+      case 'inactive':
+        return { text: 'Không hoạt động', class: 'bg-gray-100 text-gray-800' };
+      case 'out_of_stock':
+        return { text: 'Hết hàng', class: 'bg-red-100 text-red-800' };
+      case 'discontinued':
+        return { text: 'Ngừng kinh doanh', class: 'bg-yellow-100 text-yellow-800' };
+      default:
+        return { text: status, class: 'bg-gray-100 text-gray-800' };
+    }
   };
 
   return (
@@ -90,6 +183,7 @@ const ProductsManagement = () => {
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
           
@@ -97,12 +191,17 @@ const ProductsManagement = () => {
             <select
               className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setCurrentPage(0); // Reset về trang đầu khi đổi danh mục
+              }}
             >
               <option value="">Tất cả danh mục</option>
-              <option value="Điện thoại">Điện thoại</option>
-              <option value="Laptop">Laptop</option>
-              <option value="Phụ kiện">Phụ kiện</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -144,59 +243,72 @@ const ProductsManagement = () => {
                   </td>
                 </tr>
               ) : products.length > 0 ? (
-                products.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0">
-                          <img className="h-10 w-10 rounded-full object-cover" src={product.imageUrl} alt={product.name} />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            <Link to={`/admin/products/${product.id}`} className="hover:text-blue-600">
-                              {product.name}
-                            </Link>
+                products.map((product) => {
+                  const statusInfo = formatStatus(product.status);
+                  const mainVariant = product.variants && product.variants.length > 0 
+                    ? product.variants.find(v => v.id === product.defaultVariantId) || product.variants[0] 
+                    : null;
+                  const stockQuantity = mainVariant ? mainVariant.stockQuantity : 0;
+                  
+                  return (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 flex-shrink-0">
+                            <img 
+                              className="h-10 w-10 rounded-full object-cover" 
+                              src={product.images && product.images.length > 0 
+                                ? getImageUrl(product.images[0]) 
+                                : 'https://via.placeholder.com/150'
+                              } 
+                              alt={product.name} 
+                            />
                           </div>
-                          <div className="text-xs text-gray-500">
-                            ID: {product.id}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              <Link to={`/admin/products/${product.id}/edit`} className="hover:text-blue-600">
+                                {product.name}
+                              </Link>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              ID: {product.id}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 font-medium">{formatPrice(product.price)}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{product.stockQuantity}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{product.category}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        product.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {product.status === 'active' ? 'Hoạt động' : 'Hết hàng'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <Link
-                          to={`/admin/products/${product.id}/edit`}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <PencilAltIcon className="h-5 w-5" />
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteClick(product)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 font-medium">{formatPrice(product.basePrice)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{stockQuantity}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{getCategoryName(product.categoryId)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusInfo.class}`}>
+                          {statusInfo.text}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end space-x-2">
+                          <Link
+                            to={`/admin/products/${product.id}/edit`}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <PencilAltIcon className="h-5 w-5" />
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteClick(product)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
@@ -214,7 +326,7 @@ const ProductsManagement = () => {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Hiển thị <span className="font-medium">{currentPage * 10 + 1}</span> đến <span className="font-medium">{Math.min((currentPage + 1) * 10, 80)}</span> trong số <span className="font-medium">80</span> sản phẩm
+                  Hiển thị <span className="font-medium">{products.length > 0 ? currentPage * 10 + 1 : 0}</span> đến <span className="font-medium">{Math.min((currentPage + 1) * 10, totalItems)}</span> trong số <span className="font-medium">{totalItems}</span> sản phẩm
                 </p>
               </div>
               <div>
@@ -268,20 +380,18 @@ const ProductsManagement = () => {
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
-
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
                   <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <TrashIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
+                    <TrashIcon className="h-6 w-6 text-red-600" />
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                     <h3 className="text-lg leading-6 font-medium text-gray-900">Xóa sản phẩm</h3>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
-                        Bạn có chắc chắn muốn xóa sản phẩm "{productToDelete?.name}"? Hành động này không thể khôi phục.
+                        Bạn có chắc chắn muốn xóa sản phẩm "{productToDelete?.name}"? Hành động này không thể hoàn tác.
                       </p>
                     </div>
                   </div>
@@ -290,15 +400,22 @@ const ProductsManagement = () => {
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button
                   type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={confirmDelete}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  disabled={loading}
                 >
-                  Xóa
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      <span>Đang xử lý...</span>
+                    </div>
+                  ) : 'Xóa'}
                 </button>
                 <button
                   type="button"
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={() => setShowDeleteModal(false)}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  disabled={loading}
                 >
                   Hủy
                 </button>

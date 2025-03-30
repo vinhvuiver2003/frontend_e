@@ -17,6 +17,7 @@ import OrderDetail from './pages/Account/OrderDetail';
 import AdminLayout from './pages/Admin/Layout';
 import Dashboard from './pages/Admin/Dashboard';
 import ProductsManagement from './pages/Admin/ProductsManagement';
+import ProductForm from './pages/Admin/ProductForm';
 import OrdersManagement from './pages/Admin/OrdersManagement';
 import UsersManagement from './pages/Admin/UsersManagement';
 import Header from './components/layout/Header';
@@ -78,6 +79,8 @@ function App() {
                             <Route path="/admin" element={<AdminLayout />}>
                                 <Route index element={<Dashboard />} />
                                 <Route path="products" element={<ProductsManagement />} />
+                                <Route path="products/create" element={<ProductForm />} />
+                                <Route path="products/:id/edit" element={<ProductForm />} />
                                 <Route path="orders" element={<OrdersManagement />} />
                                 <Route path="users" element={<UsersManagement />} />
                                 {/* Các route admin khác sẽ được thêm sau */}

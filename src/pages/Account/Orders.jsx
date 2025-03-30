@@ -157,7 +157,7 @@ const Orders = () => {
                                     </div>
 
                                     <div className="text-sm text-gray-500 line-clamp-1">
-                                        {order.items.map(item => item.product.name).join(', ')}
+                                        {order.items.map(item => item.productName).join(', ')}
                                     </div>
                                 </div>
 
