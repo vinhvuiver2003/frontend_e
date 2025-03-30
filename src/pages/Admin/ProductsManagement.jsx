@@ -10,6 +10,7 @@ import {
   ChevronRightIcon
 } from '@heroicons/react/outline';
 import { fetchAllProducts, deleteProduct } from '../../store/slices/productSlice';
+import { getCompleteImageUrl } from '../../utils/imageUtils';
 import { API_URL } from '../../config';
 
 const ProductsManagement = () => {
@@ -126,13 +127,6 @@ const ProductsManagement = () => {
   const formatPrice = (price) => {
     if (price === undefined || price === null) return '0';
     return price.toLocaleString('vi-VN') + '₫';
-  };
-
-  // Lấy URL ảnh hoàn chỉnh
-  const getImageUrl = (url) => {
-    if (!url) return 'https://via.placeholder.com/150';
-    if (url.startsWith('http')) return url;
-    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
   // Lấy tên danh mục từ ID
@@ -258,7 +252,7 @@ const ProductsManagement = () => {
                             <img 
                               className="h-10 w-10 rounded-full object-cover" 
                               src={product.images && product.images.length > 0 
-                                ? getImageUrl(product.images[0]) 
+                                ? getCompleteImageUrl(product.images[0]) 
                                 : 'https://via.placeholder.com/150'
                               } 
                               alt={product.name} 

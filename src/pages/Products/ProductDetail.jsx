@@ -6,6 +6,7 @@ import { addToCartAsync } from '../../store/slices/cartSlice';
 import { StarIcon, ShoppingCartIcon } from '@heroicons/react/solid';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/outline';
 import ProductReviewForm from './ProductReviewForm';
+import { getCompleteImageUrl } from '../../utils/imageUtils';
 
 const ProductDetail = () => {
     const { id } = useParams();
@@ -112,7 +113,9 @@ const ProductDetail = () => {
                 variantId: selectedVariant.id,
                 name: product.name,
                 price: selectedVariant.finalPrice,
-                image: product.image,
+                image: product.images && product.images.length > 0 
+                    ? getCompleteImageUrl(product.images[0]) 
+                    : getCompleteImageUrl(product.image),
                 color: selectedVariant.color,
                 size: selectedVariant.size,
                 quantity: quantity
@@ -208,7 +211,7 @@ const ProductDetail = () => {
                         {product.images && product.images.length > 0 ? (
                             <>
                                 <img
-                                    src={product.images[activeImageIndex]}
+                                    src={getCompleteImageUrl(product.images[activeImageIndex])}
                                     alt={product.name}
                                     className="w-full h-full object-contain"
                                 />
@@ -230,7 +233,7 @@ const ProductDetail = () => {
                             </>
                         ) : (
                             <img
-                                src={product.image || 'https://via.placeholder.com/500x500?text=No+Image'}
+                                src={getCompleteImageUrl(product.image) || 'https://via.placeholder.com/500x500?text=No+Image'}
                                 alt={product.name}
                                 className="w-full h-full object-contain"
                             />
@@ -249,7 +252,7 @@ const ProductDetail = () => {
                                     }`}
                                 >
                                     <img
-                                        src={image}
+                                        src={getCompleteImageUrl(image)}
                                         alt={`${product.name} - ${index + 1}`}
                                         className="w-full h-full object-cover"
                                     />

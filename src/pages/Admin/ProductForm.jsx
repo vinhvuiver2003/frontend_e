@@ -456,6 +456,15 @@ const ProductForm = () => {
     if (!imageUrl) return '';
     if (imageUrl.startsWith('http')) return imageUrl;
     if (imageUrl.startsWith('blob:')) return imageUrl;
+    
+    // Kiểm tra nếu là đường dẫn products/ (ảnh sản phẩm từ server)
+    if (imageUrl.startsWith('products/')) {
+      // Trả về URL đến static resource handler thay vì API endpoint
+      const baseUrl = API_URL.replace('/api', ''); // Bỏ /api
+      return `${baseUrl}/images/${imageUrl}`;
+    }
+    
+    // Trường hợp mặc định khác
     return `${API_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
   };
 

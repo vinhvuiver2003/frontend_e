@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { addToCartAsync } from '../../store/slices/cartSlice';
+import { getCompleteImageUrl } from '../../utils/imageUtils';
 
 const ProductCard = ({ product }) => {
     const dispatch = useDispatch();
@@ -14,7 +15,8 @@ const ProductCard = ({ product }) => {
     const finalPrice = product.salePrice || product.basePrice || 0;
     
     // Lấy URL ảnh chính
-    const imageUrl = product.mainImageUrl || product.image || 'https://via.placeholder.com/300x300';
+    const imageUrl = product.mainImageUrl || 
+        (product.images && product.images.length > 0 ? getCompleteImageUrl(product.images[0]) : 'https://via.placeholder.com/300x300');
 
     const handleAddToCart = (e) => {
         e.preventDefault();
