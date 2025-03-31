@@ -7,6 +7,14 @@ import { fetchAllBrands } from '../../store/slices/brandSlice';
 import { XIcon, PhotographIcon, PlusIcon, ExclamationCircleIcon, PencilIcon } from '@heroicons/react/solid';
 import axios from 'axios';
 import { API_URL } from '../../config';
+import { getCompleteImageUrl } from '../../utils/imageUtils';
+import { productImageService } from '../../services';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  MinusIcon,
+  ChevronRightIcon,
+  CheckIcon
+} from '@heroicons/react/outline';
 
 const ProductForm = () => {
   const { id } = useParams();
@@ -96,7 +104,7 @@ const ProductForm = () => {
     };
   }, [dispatch, id, isEditMode]);
 
-  // Cập nhật form khi dữ liệu sản phẩm được tải (trong chế độ chỉnh sửa)
+  // Tải dữ liệu sản phẩm nếu đang ở chế độ chỉnh sửa
   useEffect(() => {
     if (isEditMode && product) {
       setFormData({
@@ -133,6 +141,48 @@ const ProductForm = () => {
         
         setVariants(variantsWithOriginalData);
       }
+      
+      // Tải ảnh sản phẩm
+      productImageService.getProductImages(product.id)
+        .then(response => {
+          if (response.data.success && response.data.data) {
+            const productImages = response.data.data;
+            
+            // Xử lý ảnh chung của sản phẩm (không có variantId)
+            const generalImages = productImages
+              .filter(img => !img.variantId)
+              .map(img => ({
+                id: img.id,
+                url: img.imageURL,
+                isExisting: true,
+                isMain: img.sortOrder === 0
+              }));
+            
+            setImages(generalImages);
+            
+            // Xử lý ảnh của từng biến thể
+            const variantImagesMap = {};
+            productImages
+              .filter(img => img.variantId)
+              .forEach(img => {
+                const variantId = img.variantId.toString();
+                if (!variantImagesMap[variantId]) {
+                  variantImagesMap[variantId] = [];
+                }
+                variantImagesMap[variantId].push({
+                  id: img.id,
+                  url: img.imageURL,
+                  isExisting: true,
+                  isMain: img.sortOrder === 0
+                });
+              });
+            
+            setVariantImages(variantImagesMap);
+          }
+        })
+        .catch(error => {
+          console.error('Lỗi khi tải ảnh sản phẩm:', error);
+        });
     }
   }, [isEditMode, product]);
 
@@ -183,16 +233,32 @@ const ProductForm = () => {
     e.target.value = null;
   };
 
-  const handleRemoveImage = (index) => {
+  const handleRemoveImage = async (index) => {
     const newImages = [...images];
+    const imageToRemove = newImages[index];
     
-    // Nếu ảnh có URL từ createObjectURL, revoke nó để tránh memory leak
-    if (newImages[index].url.startsWith('blob:') && !newImages[index].isExisting) {
-      URL.revokeObjectURL(newImages[index].url);
+    try {
+      // Nếu ảnh có URL từ createObjectURL, revoke nó để tránh memory leak
+      if (imageToRemove.url.startsWith('blob:') && !imageToRemove.isExisting) {
+        URL.revokeObjectURL(imageToRemove.url);
+        newImages.splice(index, 1);
+        setImages(newImages);
+        return;
+      }
+      
+      // Nếu ảnh là ảnh đã tồn tại trên server có ID
+      if (imageToRemove.isExisting && imageToRemove.id) {
+        // Gọi API xóa ảnh
+        await productImageService.deleteProductImage(imageToRemove.id);
+        console.log(`Đã xóa ảnh có ID: ${imageToRemove.id}`);
+      }
+      
+      newImages.splice(index, 1);
+      setImages(newImages);
+    } catch (error) {
+      console.error('Lỗi khi xóa ảnh:', error);
+      alert('Không thể xóa ảnh. Vui lòng thử lại sau.');
     }
-    
-    newImages.splice(index, 1);
-    setImages(newImages);
   };
 
   // Xử lý biến thể sản phẩm
@@ -471,26 +537,7 @@ const ProductForm = () => {
   // Hàm upload ảnh thực tế lên server
   const uploadProductImage = async (file, productId, variantId = null, isMainImage = false) => {
     try {
-      const formData = new FormData();
-      formData.append('files', file);
-      
-      // Thêm variantId và isMainImage nếu có
-      if (variantId) {
-        formData.append('variantId', variantId);
-      }
-      formData.append('isMainImage', isMainImage.toString());
-      
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${API_URL}/product-images/upload/${productId}`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': token ? `Bearer ${token}` : '',
-          },
-        }
-      );
+      const response = await productImageService.uploadProductImage(file, productId, variantId, isMainImage);
       
       if (response.data.success && response.data.data && response.data.data.length > 0) {
         return response.data.data[0].imageURL;
@@ -579,18 +626,38 @@ const ProductForm = () => {
   };
 
   // Xóa ảnh biến thể
-  const handleRemoveVariantImage = (variantId, index) => {
-    setVariantImages(prev => {
-      const existing = [...(prev[variantId] || [])];
-      if (existing[index] && existing[index].url.startsWith('blob:')) {
-        URL.revokeObjectURL(existing[index].url);
+  const handleRemoveVariantImage = async (variantId, index) => {
+    const existing = [...(variantImages[variantId] || [])];
+    const imageToRemove = existing[index];
+    
+    try {
+      // Nếu ảnh là blob URL (ảnh mới tải lên chưa lưu)
+      if (imageToRemove.url.startsWith('blob:')) {
+        URL.revokeObjectURL(imageToRemove.url);
+        existing.splice(index, 1);
+        setVariantImages(prev => ({
+          ...prev,
+          [variantId]: existing
+        }));
+        return;
       }
+      
+      // Nếu ảnh đã tồn tại trên server có ID
+      if (imageToRemove.isExisting && imageToRemove.id) {
+        // Gọi API xóa ảnh
+        await productImageService.deleteProductImage(imageToRemove.id);
+        console.log(`Đã xóa ảnh biến thể có ID: ${imageToRemove.id}`);
+      }
+      
       existing.splice(index, 1);
-      return {
+      setVariantImages(prev => ({
         ...prev,
         [variantId]: existing
-      };
-    });
+      }));
+    } catch (error) {
+      console.error('Lỗi khi xóa ảnh biến thể:', error);
+      alert('Không thể xóa ảnh biến thể. Vui lòng thử lại sau.');
+    }
   };
 
   // Đặt ảnh chính cho biến thể
