@@ -1,32 +1,87 @@
 import api from './api';
 
-// Lấy tất cả thương hiệu
-export const getAllBrands = async () => {
-  return await api.get('/brands');
+/**
+ * Lấy tất cả thương hiệu
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const getAllBrands = async (page = 0, size = 10, sortBy = 'name', sortDir = 'asc') => {
+  try {
+    const response = await api.get(`/brands?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Lấy thương hiệu theo ID
-export const getBrandById = async (id) => {
-  return await api.get(`/brands/${id}`);
+const getAllBrandsNoPage = async () => {
+  try {
+    const response = await api.get('/brands/all');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Tạo thương hiệu mới (chỉ ADMIN)
-export const createBrand = async (brandData) => {
-  return await api.post('/brands', brandData);
+/**
+ * Lấy thương hiệu theo ID
+ * @param {number} id - ID của thương hiệu
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const getBrandById = async (id) => {
+  try {
+    const response = await api.get(`/brands/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Cập nhật thương hiệu (chỉ ADMIN)
-export const updateBrand = async (id, brandData) => {
-  return await api.put(`/brands/${id}`, brandData);
+/**
+ * Tạo thương hiệu mới
+ * @param {Object} brandData - Dữ liệu thương hiệu
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const createBrand = async (brandData) => {
+  try {
+    const response = await api.post('/brands', brandData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Xóa thương hiệu (chỉ ADMIN)
-export const deleteBrand = async (id) => {
-  return await api.delete(`/brands/${id}`);
+/**
+ * Cập nhật thương hiệu
+ * @param {number} id - ID của thương hiệu
+ * @param {Object} brandData - Dữ liệu thương hiệu
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const updateBrand = async (id, brandData) => {
+  try {
+    const response = await api.put(`/brands/${id}`, brandData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Xóa thương hiệu
+ * @param {number} id - ID của thương hiệu
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const deleteBrand = async (id) => {
+  try {
+    const response = await api.delete(`/brands/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 const brandService = {
   getAllBrands,
+  getAllBrandsNoPage,
   getBrandById,
   createBrand,
   updateBrand,

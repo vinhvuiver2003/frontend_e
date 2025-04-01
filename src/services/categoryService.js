@@ -1,45 +1,125 @@
 import api from './api';
 
-// Lấy tất cả danh mục
-export const getAllCategories = async () => {
-  return await api.get('/categories');
+/**
+ * Lấy tất cả danh mục
+ * @param {number} page - Trang hiện tại
+ * @param {number} size - Số lượng danh mục trên mỗi trang
+ * @param {string} sortBy - Trường sắp xếp
+ * @param {string} sortDir - Hướng sắp xếp
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const getAllCategories = async (page = 0, size = 10, sortBy = 'name', sortDir = 'asc') => {
+  try {
+    const response = await api.get(`/categories?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Lấy danh mục theo ID
-export const getCategoryById = async (id) => {
-  return await api.get(`/categories/${id}`);
+/**
+ * Lấy tất cả danh mục không phân trang
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const getAllCategoriesNoPage = async () => {
+  try {
+    const response = await api.get('/categories/all');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Lấy danh mục con
-export const getSubcategories = async (parentId) => {
-  return await api.get(`/categories/parent/${parentId}`);
+/**
+ * Lấy danh mục cha
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const getParentCategories = async () => {
+  try {
+    const response = await api.get('/categories/parent');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Lấy các danh mục cấp cao nhất (không có parent)
-export const getRootCategories = async () => {
-  return await api.get('/categories/roots');
+/**
+ * Lấy danh mục con
+ * @param {number} parentId - ID của danh mục cha
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const getSubcategories = async (parentId) => {
+  try {
+    const response = await api.get(`/categories/${parentId}/subcategories`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Tạo danh mục mới (chỉ ADMIN)
-export const createCategory = async (categoryData) => {
-  return await api.post('/categories', categoryData);
+/**
+ * Lấy danh mục theo ID
+ * @param {number} id - ID của danh mục
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const getCategoryById = async (id) => {
+  try {
+    const response = await api.get(`/categories/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Cập nhật danh mục (chỉ ADMIN)
-export const updateCategory = async (id, categoryData) => {
-  return await api.put(`/categories/${id}`, categoryData);
+/**
+ * Tạo danh mục mới
+ * @param {Object} categoryData - Dữ liệu danh mục
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const createCategory = async (categoryData) => {
+  try {
+    const response = await api.post('/categories', categoryData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Xóa danh mục (chỉ ADMIN)
-export const deleteCategory = async (id) => {
-  return await api.delete(`/categories/${id}`);
+/**
+ * Cập nhật danh mục
+ * @param {number} id - ID của danh mục
+ * @param {Object} categoryData - Dữ liệu danh mục
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const updateCategory = async (id, categoryData) => {
+  try {
+    const response = await api.put(`/categories/${id}`, categoryData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Xóa danh mục
+ * @param {number} id - ID của danh mục
+ * @returns {Promise<Object>} - Kết quả API
+ */
+const deleteCategory = async (id) => {
+  try {
+    const response = await api.delete(`/categories/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 const categoryService = {
   getAllCategories,
-  getCategoryById,
+  getAllCategoriesNoPage,
+  getParentCategories,
   getSubcategories,
-  getRootCategories,
+  getCategoryById,
   createCategory,
   updateCategory,
   deleteCategory

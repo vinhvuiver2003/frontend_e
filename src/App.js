@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCart, mergeCartsAsync } from './store/slices/cartSlice';
 import Home from './pages/Home';
@@ -20,6 +20,8 @@ import ProductsManagement from './pages/Admin/ProductsManagement';
 import ProductForm from './pages/Admin/ProductForm';
 import OrdersManagement from './pages/Admin/OrdersManagement';
 import UsersManagement from './pages/Admin/UsersManagement';
+import CategoriesManagement from './pages/Admin/CategoriesManagement';
+import BrandsManagement from './pages/Admin/BrandsManagement';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import PrivateRoute from './components/routes/PrivateRoute';
@@ -32,8 +34,10 @@ function App() {
 
     // Khởi tạo giỏ hàng khi ứng dụng được tải
     useEffect(() => {
-        dispatch(fetchCart());
-    }, [dispatch, isAuthenticated]);
+        if (isAuthenticated) {
+            dispatch(fetchCart());
+        }
+    }, [isAuthenticated, dispatch]);
 
     // Kiểm tra và thực hiện hợp nhất giỏ hàng sau khi đăng nhập
     useEffect(() => {
@@ -83,6 +87,8 @@ function App() {
                                 <Route path="products/:id/edit" element={<ProductForm />} />
                                 <Route path="orders" element={<OrdersManagement />} />
                                 <Route path="users" element={<UsersManagement />} />
+                                <Route path="categories" element={<CategoriesManagement />} />
+                                <Route path="brands" element={<BrandsManagement />} />
                                 {/* Các route admin khác sẽ được thêm sau */}
                             </Route>
                         </Route>

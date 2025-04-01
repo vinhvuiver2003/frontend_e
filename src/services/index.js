@@ -24,4 +24,19 @@ export {
   paymentService,
   userService,
   addressService
-}; 
+};
+
+export default {
+  api,
+  authService,
+  productService,
+  productImageService,
+  cartService,
+  orderService,
+  reviewService,
+  categoryService,
+  brandService,
+  paymentService,
+  userService,
+  addressService
+};
