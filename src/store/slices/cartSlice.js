@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { cartService } from '../../services';
+import { cartService, promotionService } from '../../services';
 
 // Tạo hoặc lấy sessionId cho khách chưa đăng nhập
 const getSessionId = () => {
@@ -146,19 +146,34 @@ export const mergeCartsAsync = createAsyncThunk(
   }
 );
 
+// Thêm action async để áp dụng mã giảm giá
+export const applyPromotionAsync = createAsyncThunk(
+  'cart/applyPromotionAsync',
+  async (code, { rejectWithValue }) => {
+    try {
+      const response = await promotionService.validatePromotion(code);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { message: error.message });
+    }
+  }
+);
+
 const initialState = {
   cartId: null,
   items: [],
-    totalQuantity: 0,
-    totalAmount: 0,
+  totalQuantity: 0,
+  totalAmount: 0,
   loading: false,
-  error: null
+  error: null,
+  promotion: null,
+  discountAmount: 0
 };
 
 export const cartSlice = createSlice({
-    name: 'cart',
-    initialState,
-    reducers: {
+  name: 'cart',
+  initialState,
+  reducers: {
     clearCartError: (state) => {
       state.error = null;
     },
@@ -169,6 +184,12 @@ export const cartSlice = createSlice({
       state.totalQuantity = 0;
       state.totalAmount = 0;
       state.error = null;
+      state.promotion = null;
+      state.discountAmount = 0;
+    },
+    removePromotion: (state) => {
+      state.promotion = null;
+      state.discountAmount = 0;
     }
   },
   extraReducers: (builder) => {
@@ -182,8 +203,16 @@ export const cartSlice = createSlice({
         state.loading = false;
         state.cartId = action.payload.id;
         state.items = action.payload.items || [];
-        state.totalQuantity = action.payload.totalQuantity || 0;
-        state.totalAmount = action.payload.totalAmount || 0;
+        
+        // Tính toán lại tổng số lượng từ các mục trong giỏ hàng
+        state.totalQuantity = state.items.reduce((total, item) => total + (item.quantity || 0), 0);
+        
+        // Sử dụng totalAmount từ backend hoặc tính lại nếu không có
+        state.totalAmount = action.payload.totalAmount || 
+                           state.items.reduce((total, item) => {
+                             const itemPrice = item.unitPrice || item.price || 0;
+                             return total + itemPrice * (item.quantity || 1);
+                           }, 0);
       })
       .addCase(fetchCart.rejected, (state, action) => {
         state.loading = false;
@@ -246,9 +275,9 @@ export const cartSlice = createSlice({
       })
       .addCase(clearCartAsync.fulfilled, (state) => {
         state.loading = false;
-            state.items = [];
-            state.totalQuantity = 0;
-            state.totalAmount = 0;
+        state.items = [];
+        state.totalQuantity = 0;
+        state.totalAmount = 0;
       })
       .addCase(clearCartAsync.rejected, (state, action) => {
         state.loading = false;
@@ -272,10 +301,42 @@ export const cartSlice = createSlice({
       .addCase(mergeCartsAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || 'Không thể hợp nhất giỏ hàng';
+      })
+
+      // Xử lý applyPromotionAsync
+      .addCase(applyPromotionAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(applyPromotionAsync.fulfilled, (state, action) => {
+        state.loading = false;
+        state.promotion = action.payload;
+        
+        // Tính toán giảm giá
+        if (action.payload && state.totalAmount > 0) {
+          if (action.payload.discountType === 'percentage') {
+            // Giảm giá theo phần trăm
+            const percentage = parseFloat(action.payload.discountValue);
+            state.discountAmount = (state.totalAmount * percentage) / 100;
+          } else {
+            // Giảm giá cố định
+            state.discountAmount = parseFloat(action.payload.discountValue);
+            // Đảm bảo giảm giá không vượt quá tổng giá trị đơn hàng
+            if (state.discountAmount > state.totalAmount) {
+              state.discountAmount = state.totalAmount;
+            }
+          }
+        }
+      })
+      .addCase(applyPromotionAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || 'Mã giảm giá không hợp lệ';
+        state.promotion = null;
+        state.discountAmount = 0;
       });
   }
 });
 
-export const { clearCartError, resetCart } = cartSlice.actions;
+export const { clearCartError, resetCart, removePromotion } = cartSlice.actions;
 
 export default cartSlice.reducer;

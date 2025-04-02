@@ -1,7 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { removeFromCartAsync, updateCartItemAsync, clearCartAsync, fetchCart } from '../../store/slices/cartSlice';
+import { 
+    removeFromCartAsync, 
+    updateCartItemAsync, 
+    clearCartAsync, 
+    fetchCart, 
+    applyPromotionAsync,
+    removePromotion
+} from '../../store/slices/cartSlice';
 import { TrashIcon, XIcon } from '@heroicons/react/outline';
 
 // Hàm tiện ích để format giá
@@ -15,8 +22,18 @@ const formatPrice = (price) => {
 const Cart = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const [promoCode, setPromoCode] = useState('');
 
-    const { items, totalQuantity, totalAmount, loading } = useSelector(state => state.cart);
+    const { 
+        items, 
+        totalQuantity, 
+        totalAmount, 
+        loading, 
+        error,
+        promotion, 
+        discountAmount 
+    } = useSelector(state => state.cart);
+    
     const { isAuthenticated } = useSelector(state => state.auth);
 
     useEffect(() => {
@@ -50,6 +67,17 @@ const Cart = () => {
                 navigate('/login', { state: { from: '/cart' } });
             }
         }
+    };
+
+    const handleApplyPromoCode = () => {
+        if (promoCode.trim()) {
+            dispatch(applyPromotionAsync(promoCode.trim()));
+        }
+    };
+
+    const handleRemovePromoCode = () => {
+        dispatch(removePromotion());
+        setPromoCode('');
     };
 
     if (loading) {
@@ -114,17 +142,10 @@ const Cart = () => {
                                 <tr key={item.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <div className="flex-shrink-0 h-16 w-16">
-                                                <img
-                                                    className="h-16 w-16 object-cover"
-                                                    src={item.image || 'https://via.placeholder.com/150'}
-                                                    alt={item.name || 'Sản phẩm'}
-                                                />
-                                            </div>
-                                            <div className="ml-4">
+                                            <div className="ml-0">
                                                 <div className="text-sm font-medium text-gray-900">
                                                     <Link to={`/products/${item.productId}`} className="hover:text-blue-600">
-                                                        {item.name || 'Sản phẩm không có tên'}
+                                                        {item.productName || item.name || 'Sản phẩm không có tên'}
                                                     </Link>
                                                 </div>
                                                 <div className="text-sm text-gray-500">
@@ -132,13 +153,13 @@ const Cart = () => {
                                                     {item.size && <span className="ml-2">Size: {item.size}</span>}
                                                 </div>
                                                 <div className="md:hidden text-sm font-medium text-gray-900 mt-1">
-                                                    {formatPrice(item.price)} đ
+                                                    {formatPrice(item.unitPrice || item.price || 0)} đ
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                                        <div className="text-sm text-gray-900">{formatPrice(item.price)} đ</div>
+                                        <div className="text-sm text-gray-900">{formatPrice(item.unitPrice || item.price || 0)} đ</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
@@ -170,7 +191,7 @@ const Cart = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                                         <div className="text-sm font-medium text-gray-900">
-                                            {formatPrice((item.price || 0) * (item.quantity || 1))} đ
+                                            {formatPrice((item.total || (item.unitPrice || item.price || 0) * (item.quantity || 1)))} đ
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -208,55 +229,73 @@ const Cart = () => {
                 {/* Tổng tiền và thanh toán */}
                 <div className="lg:col-span-1">
                     <div className="bg-white rounded-lg shadow-sm p-6">
-                        <h2 className="text-lg font-medium mb-4">Tổng đơn hàng</h2>
+                        <h2 className="text-lg font-medium mb-4">Tóm tắt đơn hàng</h2>
 
-                        <div className="space-y-4">
-                            <div className="flex justify-between border-b pb-2">
-                                <span className="text-gray-600">Tạm tính</span>
-                                <span className="font-medium">{formatPrice(totalAmount)} đ</span>
-                            </div>
-
-                            <div className="flex justify-between border-b pb-2">
-                                <span className="text-gray-600">Phí vận chuyển</span>
-                                <span className="font-medium">Miễn phí</span>
-                            </div>
-
-                            <div className="flex justify-between">
-                                <span className="text-gray-800 font-medium">Tổng cộng</span>
-                                <span className="text-xl font-bold text-red-600">{formatPrice(totalAmount)} đ</span>
-                            </div>
-
-                            <div className="pt-4">
-                                <button
-                                    onClick={handleCheckout}
-                                    className="w-full py-3 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                                >
-                                    Tiến hành thanh toán
-                                </button>
-                            </div>
-
-                            <div className="mt-4">
-                                <div className="relative">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-gray-300"></div>
-                                    </div>
-                                    <div className="relative flex justify-center text-sm">
-                                        <span className="px-2 bg-white text-gray-500">hoặc</span>
-                                    </div>
-                                </div>
-
-                                <div className="mt-4">
-                                    <input
-                                        type="text"
-                                        placeholder="Nhập mã giảm giá"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                    <button className="mt-2 w-full py-2 px-4 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors">
+                        {/* Mã giảm giá */}
+                        <div className="mt-4 mb-4">
+                            <div className="flex items-center">
+                                <input
+                                    type="text"
+                                    value={promoCode}
+                                    onChange={(e) => setPromoCode(e.target.value)}
+                                    disabled={promotion !== null}
+                                    placeholder="Nhập mã giảm giá"
+                                    className="w-full px-3 py-2 border rounded-l focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                                {promotion ? (
+                                    <button
+                                        onClick={handleRemovePromoCode}
+                                        className="px-4 py-2 bg-red-500 text-white rounded-r"
+                                    >
+                                        Hủy
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleApplyPromoCode}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-r"
+                                    >
                                         Áp dụng
                                     </button>
+                                )}
+                            </div>
+                            {error && (
+                                <p className="text-red-500 text-xs mt-1">{error}</p>
+                            )}
+                            {promotion && (
+                                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
+                                    <p className="text-green-700 font-medium">{promotion.name}</p>
+                                    <p className="text-green-600">{promotion.description}</p>
                                 </div>
+                            )}
+                        </div>
+
+                        <div className="border-t pt-4">
+                            <div className="flex justify-between py-2">
+                                <span className="text-gray-600">Tổng phụ</span>
+                                <span className="font-medium">{formatPrice(totalAmount)} đ</span>
+                            </div>
+                            {discountAmount > 0 && (
+                                <div className="flex justify-between py-2 text-green-600">
+                                    <span>Giảm giá</span>
+                                    <span>- {formatPrice(discountAmount)} đ</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between py-2">
+                                <span className="text-gray-600">Phí vận chuyển</span>
+                                <span>Được tính khi thanh toán</span>
+                            </div>
+                            <div className="flex justify-between py-2 text-lg font-bold">
+                                <span>Tổng cộng</span>
+                                <span>{formatPrice(totalAmount - discountAmount)} đ</span>
                             </div>
                         </div>
+
+                        <button
+                            onClick={handleCheckout}
+                            className="w-full mt-6 bg-blue-600 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-700"
+                        >
+                            Tiến hành thanh toán
+                        </button>
                     </div>
                 </div>
             </div>

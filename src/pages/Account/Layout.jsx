@@ -9,8 +9,7 @@ const AccountLayout = () => {
     const navigate = useNavigate();
     const { isAuthenticated, user } = useSelector(state => state.auth);
 
-    // Chuyển hướng nếu chưa đăng nhập
-    React.useEffect(() => {
+     React.useEffect(() => {
         if (!isAuthenticated) {
             navigate('/login');
         }
@@ -22,7 +21,7 @@ const AccountLayout = () => {
     };
 
     if (!isAuthenticated || !user) {
-        return null; // Không hiển thị gì nếu chưa đăng nhập
+        return null;
     }
 
     return (

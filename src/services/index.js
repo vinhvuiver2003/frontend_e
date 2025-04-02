@@ -10,6 +10,7 @@ import brandService from './brandService';
 import paymentService from './paymentService';
 import userService from './userService';
 import addressService from './addressService';
+import promotionService from './promotionService';
 
 export {
   api,
@@ -23,7 +24,8 @@ export {
   brandService,
   paymentService,
   userService,
-  addressService
+  addressService,
+  promotionService
 };
 
 export default {
@@ -38,5 +40,6 @@ export default {
   brandService,
   paymentService,
   userService,
-  addressService
+  addressService,
+  promotionService
 };
