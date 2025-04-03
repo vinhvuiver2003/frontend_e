@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { orderService } from '../../services';
 import { toast } from 'react-toastify';
+import { clearCartAsync } from './cartSlice';
 
 // Async thunk để lấy tất cả đơn hàng
 export const fetchAllOrders = createAsyncThunk(

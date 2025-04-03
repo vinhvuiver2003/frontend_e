@@ -27,14 +27,9 @@ const Checkout = () => {
         address: user?.address || '',
         city: user?.city || '',
         notes: '',
-        paymentMethod: 'cod',
+        paymentMethod: 'vnpay',
         shippingMethod: 'standard',
         saveInfo: true,
-        cardNumber: '',
-        cardName: '',
-        cardExpiry: '',
-        cardCvc: '',
-        momoPhone: ''
     });
 
     const [errors, setErrors] = useState({});
@@ -93,25 +88,6 @@ const Checkout = () => {
 
         if (!formData.city) {
             newErrors.city = 'Thành phố là bắt buộc';
-        }
-
-        if (formData.paymentMethod === 'card') {
-            if (!formData.cardNumber.trim() || formData.cardNumber.replace(/\s+/g, '').length < 16) {
-                newErrors.cardNumber = 'Số thẻ không hợp lệ';
-            }
-            if (!formData.cardName.trim()) {
-                newErrors.cardName = 'Tên trên thẻ là bắt buộc';
-            }
-            if (!formData.cardExpiry.trim() || !/^\d{2}\/\d{2}$/.test(formData.cardExpiry)) {
-                newErrors.cardExpiry = 'Ngày hết hạn không hợp lệ';
-            }
-            if (!formData.cardCvc.trim() || !/^\d{3,4}$/.test(formData.cardCvc)) {
-                newErrors.cardCvc = 'Mã CVC không hợp lệ';
-            }
-        }
-
-        if (formData.paymentMethod === 'momo' && !formData.momoPhone.trim()) {
-            newErrors.momoPhone = 'Số điện thoại MoMo là bắt buộc';
         }
 
         return newErrors;
@@ -502,181 +478,27 @@ const Checkout = () => {
                         <div className="space-y-4">
                             <div className="flex items-center">
                                 <input
-                                    id="cod"
+                                    id="vnpay"
                                     name="paymentMethod"
                                     type="radio"
-                                    value="cod"
-                                    checked={formData.paymentMethod === 'cod'}
-                                    onChange={handleChange}
+                                    value="vnpay"
+                                    checked={true}
+                                    readOnly
                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                 />
-                                <label htmlFor="cod" className="ml-3 block text-sm font-medium text-gray-700">
-                                    Thanh toán khi nhận hàng (COD)
+                                <label htmlFor="vnpay" className="ml-3 block text-sm font-medium text-gray-700">
+                                    Thanh toán qua VNPAY QR
                                 </label>
                             </div>
                             
-                            <div className="flex items-center">
-                                <input
-                                    id="bank"
-                                    name="paymentMethod"
-                                    type="radio"
-                                    value="bank"
-                                    checked={formData.paymentMethod === 'bank'}
-                                    onChange={handleChange}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                />
-                                <label htmlFor="bank" className="ml-3 block text-sm font-medium text-gray-700">
-                                    Chuyển khoản ngân hàng
-                                </label>
-                            </div>
-                            
-                            {formData.paymentMethod === 'bank' && (
-                                <div className="pl-7 mt-2 p-3 bg-gray-50 rounded-md">
-                                    <p className="text-sm font-medium text-gray-700">Thông tin chuyển khoản:</p>
-                                    <p className="text-sm text-gray-600">Ngân hàng: Vietcombank</p>
-                                    <p className="text-sm text-gray-600">Số tài khoản: 1234567890</p>
-                                    <p className="text-sm text-gray-600">Chủ tài khoản: Fashion Store</p>
-                                    <p className="text-sm text-gray-600">Nội dung: [Mã đơn hàng] - [Tên của bạn]</p>
+                            <div className="pl-7 mt-2 p-3 bg-gray-50 rounded-md">
+                                <p className="text-sm font-medium text-gray-700">Thông tin thanh toán:</p>
+                                <p className="text-sm text-gray-600">Bạn sẽ được chuyển đến cổng thanh toán VNPAY để quét mã QR thanh toán.</p>
+                                <p className="text-sm text-gray-600">Sau khi thanh toán thành công, đơn hàng sẽ được xử lý ngay lập tức.</p>
+                                <div className="mt-2 flex justify-center">
+                                    <img src="/images/vnpay-logo.png" alt="VNPAY" className="h-10" onError={(e) => e.target.style.display = 'none'} />
                                 </div>
-                            )}
-                            
-                            <div className="flex items-center">
-                                <input
-                                    id="card"
-                                    name="paymentMethod"
-                                    type="radio"
-                                    value="card"
-                                    checked={formData.paymentMethod === 'card'}
-                                    onChange={handleChange}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                />
-                                <label htmlFor="card" className="ml-3 block text-sm font-medium text-gray-700">
-                                    Thẻ tín dụng/ghi nợ
-                                </label>
                             </div>
-                            
-                            {formData.paymentMethod === 'card' && (
-                                <div className="pl-7 mt-2 space-y-3">
-                                    <div>
-                                        <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Số thẻ
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="cardNumber"
-                                            name="cardNumber"
-                                            value={formData.cardNumber}
-                                            onChange={handleCardNumberChange}
-                                            placeholder="1234 5678 9012 3456"
-                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                                                errors.cardNumber ? 'border-red-500' : 'border-gray-300'
-                                            }`}
-                                        />
-                                        {errors.cardNumber && (
-                                            <p className="text-red-500 text-xs mt-1">{errors.cardNumber}</p>
-                                        )}
-                                    </div>
-                                    
-                                    <div>
-                                        <label htmlFor="cardName" className="block text-sm font-medium text-gray-700 mb-1">
-                                            Tên trên thẻ
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="cardName"
-                                            name="cardName"
-                                            value={formData.cardName}
-                                            onChange={handleChange}
-                                            placeholder="NGUYEN VAN A"
-                                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                                                errors.cardName ? 'border-red-500' : 'border-gray-300'
-                                            }`}
-                                        />
-                                        {errors.cardName && (
-                                            <p className="text-red-500 text-xs mt-1">{errors.cardName}</p>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label htmlFor="cardExpiry" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Ngày hết hạn
-                                            </label>
-                                            <input
-                                                type="text"
-                                                id="cardExpiry"
-                                                name="cardExpiry"
-                                                value={formData.cardExpiry}
-                                                onChange={handleCardExpiryChange}
-                                                placeholder="MM/YY"
-                                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                                                    errors.cardExpiry ? 'border-red-500' : 'border-gray-300'
-                                                }`}
-                                            />
-                                            {errors.cardExpiry && (
-                                                <p className="text-red-500 text-xs mt-1">{errors.cardExpiry}</p>
-                                            )}
-                                        </div>
-                                        
-                                        <div>
-                                            <label htmlFor="cardCvc" className="block text-sm font-medium text-gray-700 mb-1">
-                                                Mã bảo mật (CVC)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                id="cardCvc"
-                                                name="cardCvc"
-                                                value={formData.cardCvc}
-                                                onChange={handleCardCvcChange}
-                                                placeholder="123"
-                                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                                                    errors.cardCvc ? 'border-red-500' : 'border-gray-300'
-                                                }`}
-                                            />
-                                            {errors.cardCvc && (
-                                                <p className="text-red-500 text-xs mt-1">{errors.cardCvc}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            <div className="flex items-center">
-                                <input
-                                    id="momo"
-                                    name="paymentMethod"
-                                    type="radio"
-                                    value="momo"
-                                    checked={formData.paymentMethod === 'momo'}
-                                    onChange={handleChange}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                />
-                                <label htmlFor="momo" className="ml-3 block text-sm font-medium text-gray-700">
-                                    Thanh toán qua ví MoMo
-                                </label>
-                            </div>
-                            
-                            {formData.paymentMethod === 'momo' && (
-                                <div className="pl-7 mt-2">
-                                    <label htmlFor="momoPhone" className="block text-sm font-medium text-gray-700 mb-1">
-                                        Số điện thoại MoMo
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        id="momoPhone"
-                                        name="momoPhone"
-                                        value={formData.momoPhone}
-                                        onChange={handleChange}
-                                        placeholder="0912345678"
-                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                                            errors.momoPhone ? 'border-red-500' : 'border-gray-300'
-                                        }`}
-                                    />
-                                    {errors.momoPhone && (
-                                        <p className="text-red-500 text-xs mt-1">{errors.momoPhone}</p>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -731,6 +553,11 @@ const Checkout = () => {
                                     {formatPrice(totalAmount - discountAmount + shippingFee)} đ
                                 </span>
                             </div>
+                            
+                            <div className="flex justify-between pt-2">
+                                <span className="text-gray-600">Phương thức thanh toán</span>
+                                <span className="font-medium text-blue-600">VNPAY QR</span>
+                            </div>
                         </div>
 
                         <div className="mt-8">
@@ -742,7 +569,7 @@ const Checkout = () => {
                                     isLoading ? 'opacity-70 cursor-not-allowed' : ''
                                 }`}
                             >
-                                {isLoading ? 'Đang xử lý...' : 'Đặt hàng'}
+                                {isLoading ? 'Đang xử lý...' : 'Thanh toán qua VNPAY'}
                             </button>
                             
                             <button
