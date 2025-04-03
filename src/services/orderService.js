@@ -74,7 +74,7 @@ export const getOrdersByStatus = async (status) => {
  * @returns {Promise<Object>} - Kết quả API
  */
 export const updateOrderStatus = async (id, status) => {
-  return await api.put(`/orders/${id}/status/${status}`);
+  return await api.patch(`/orders/${id}/status?status=${status}`);
 };
 
 /**
@@ -102,7 +102,7 @@ export const confirmDelivery = async (id) => {
  * @returns {Promise<Object>} - Kết quả API
  */
 export const cancelOrder = async (id, reason) => {
-  return await api.put(`/orders/${id}/cancel`, { reason });
+  return await api.patch(`/orders/${id}/cancel?cancelReason=${encodeURIComponent(reason || '')}`);
 };
 
 /**

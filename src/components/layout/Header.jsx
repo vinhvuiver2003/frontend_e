@@ -90,7 +90,7 @@ const Header = () => {
                                         Thông tin tài khoản
                                     </Link>
                                     <Link
-                                        to="/orders"
+                                        to="/account/orders"
                                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                         onClick={() => setDropdownOpen(false)}
                                     >
@@ -165,14 +165,14 @@ const Header = () => {
                     {isAuthenticated ? (
                         <>
                             <Link
-                                to="/profile"
+                                to="/account/profile"
                                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 Thông tin tài khoản
                             </Link>
                             <Link
-                                to="/orders"
+                                to="/account/orders"
                                 className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
                                 onClick={() => setMobileMenuOpen(false)}
                             >

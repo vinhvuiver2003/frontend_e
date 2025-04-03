@@ -54,6 +54,13 @@ const OrdersManagement = () => {
         .unwrap()
         .then(() => {
           setShowStatusModal(false);
+          // Refresh danh sách sau khi cập nhật
+          dispatch(fetchAllOrders({ 
+            page: currentPage, 
+            size: 10, 
+            sortBy, 
+            sortDir 
+          }));
         })
         .catch((err) => console.error('Error updating order status:', err));
     }
@@ -88,12 +95,8 @@ const OrdersManagement = () => {
         statusClass = 'bg-yellow-100 text-yellow-800';
         statusText = 'Chờ xác nhận';
         break;
-      case 'confirmed':
+      case 'processing':
         statusClass = 'bg-blue-100 text-blue-800';
-        statusText = 'Đã xác nhận';
-        break;
-      case 'processed':
-        statusClass = 'bg-indigo-100 text-indigo-800';
         statusText = 'Đang xử lý';
         break;
       case 'shipped':
@@ -107,6 +110,10 @@ const OrdersManagement = () => {
       case 'cancelled':
         statusClass = 'bg-red-100 text-red-800';
         statusText = 'Đã hủy';
+        break;
+      case 'refunded':
+        statusClass = 'bg-orange-100 text-orange-800';
+        statusText = 'Đã hoàn tiền';
         break;
       default:
         statusClass = 'bg-gray-100 text-gray-800';
@@ -154,11 +161,11 @@ const OrdersManagement = () => {
               >
                 <option value="">Tất cả trạng thái</option>
                 <option value="pending">Chờ xác nhận</option>
-                <option value="confirmed">Đã xác nhận</option>
-                <option value="processed">Đang xử lý</option>
+                <option value="processing">Đang xử lý</option>
                 <option value="shipped">Đang giao hàng</option>
                 <option value="delivered">Đã giao hàng</option>
                 <option value="cancelled">Đã hủy</option>
+                <option value="refunded">Đã hoàn tiền</option>
               </select>
             </div>
             
@@ -369,11 +376,11 @@ const OrdersManagement = () => {
                     className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   >
                     <option value="pending">Chờ xác nhận</option>
-                    <option value="confirmed">Đã xác nhận</option>
-                    <option value="processed">Đang xử lý</option>
+                    <option value="processing">Đang xử lý</option>
                     <option value="shipped">Đang giao hàng</option>
                     <option value="delivered">Đã giao hàng</option>
                     <option value="cancelled">Đã hủy</option>
+                    <option value="refunded">Đã hoàn tiền</option>
                   </select>
                 </div>
                 

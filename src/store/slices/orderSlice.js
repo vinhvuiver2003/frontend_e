@@ -22,7 +22,7 @@ export const fetchMyOrders = createAsyncThunk(
   async ({ page = 0, size = 10 }, { rejectWithValue }) => {
     try {
       const response = await orderService.getMyOrders(page, size);
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -84,26 +84,26 @@ export const checkoutOrder = createAsyncThunk(
 );
 
 // Xác nhận đã nhận hàng
-export const confirmOrderDelivery = createAsyncThunk(
-  'orders/confirmOrderDelivery',
-  async (id, { rejectWithValue }) => {
-    try {
-      const response = await orderService.confirmDelivery(id);
-      toast.success('Xác nhận đã nhận hàng thành công');
-      return response.data.data;
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Lỗi khi xác nhận đã nhận hàng');
-      return rejectWithValue(error.response?.data || 'Lỗi khi xác nhận đã nhận hàng');
+export const confirmDelivery = createAsyncThunk(
+    'orders/confirmDelivery',
+    async (orderId, { rejectWithValue }) => {
+        try {
+            const response = await orderService.confirmDelivery(orderId);
+            toast.success('Xác nhận đã nhận hàng thành công');
+            return response.data.data;
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Lỗi khi xác nhận đã nhận hàng');
+            return rejectWithValue(error.response?.data || 'Lỗi khi xác nhận đã nhận hàng');
+        }
     }
-  }
 );
 
 // Async thunk để cập nhật trạng thái đơn hàng
 export const updateOrderStatus = createAsyncThunk(
     'orders/updateStatus',
-    async ({ orderId, status }, { rejectWithValue }) => {
+    async ({ id, status }, { rejectWithValue }) => {
         try {
-            const response = await orderService.updateOrderStatus(orderId, status);
+            const response = await orderService.updateOrderStatus(id, status);
             toast.success('Cập nhật trạng thái đơn hàng thành công');
             return response.data;
         } catch (error) {
@@ -124,21 +124,6 @@ export const deleteOrder = createAsyncThunk(
         } catch (error) {
             toast.error(error.response?.data?.message || 'Lỗi khi xóa đơn hàng');
             return rejectWithValue(error.response?.data || 'Lỗi khi xóa đơn hàng');
-        }
-    }
-);
-
-// Xác nhận đã nhận hàng
-export const confirmDelivery = createAsyncThunk(
-    'orders/confirmDelivery',
-    async (orderId, { rejectWithValue }) => {
-        try {
-            const response = await orderService.confirmDelivery(orderId);
-            toast.success('Xác nhận đã nhận hàng thành công');
-            return response.data;
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Lỗi khi xác nhận đã nhận hàng');
-            return rejectWithValue(error.response?.data || 'Lỗi khi xác nhận đã nhận hàng');
         }
     }
 );
@@ -164,7 +149,7 @@ export const fetchAdminOrders = createAsyncThunk(
   async ({ page = 0, size = 10, sortBy = 'createdAt', sortDir = 'desc' }, { rejectWithValue }) => {
     try {
       const response = await orderService.getAllOrders(page, size, sortBy, sortDir);
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -239,18 +224,41 @@ const orderSlice = createSlice({
             })
             .addCase(fetchAllOrders.fulfilled, (state, action) => {
                 state.loading = false;
-                state.allOrders.content = action.payload.content || action.payload;
-                if (action.payload.totalElements) {
-                    state.allOrders.pagination = {
-                        totalElements: action.payload.totalElements,
-                        totalPages: action.payload.totalPages,
-                        page: action.payload.page,
-                        size: action.payload.size,
-                        last: action.payload.last
-                    };
-                }
+                state.allOrders = {
+                    content: action.payload.data.content,
+                    pagination: {
+                        totalElements: action.payload.data.totalElements,
+                        totalPages: action.payload.data.totalPages,
+                        page: action.payload.data.page,
+                        size: action.payload.data.size,
+                        last: action.payload.data.last
+                    }
+                };
             })
             .addCase(fetchAllOrders.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể tải danh sách đơn hàng';
+            })
+            
+            // fetchMyOrders
+            .addCase(fetchMyOrders.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchMyOrders.fulfilled, (state, action) => {
+                state.loading = false;
+                state.myOrders = {
+                    content: action.payload.data.content,
+                    pagination: {
+                        totalElements: action.payload.data.totalElements,
+                        totalPages: action.payload.data.totalPages,
+                        page: action.payload.data.page,
+                        size: action.payload.data.size,
+                        last: action.payload.data.last
+                    }
+                };
+            })
+            .addCase(fetchMyOrders.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload?.message || 'Không thể tải danh sách đơn hàng';
             })
@@ -433,6 +441,20 @@ const orderSlice = createSlice({
             .addCase(cancelOrder.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload?.message || 'Không thể hủy đơn hàng';
+            })
+            
+            // fetchOrderById
+            .addCase(fetchOrderById.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchOrderById.fulfilled, (state, action) => {
+                state.loading = false;
+                state.currentOrder = action.payload;
+            })
+            .addCase(fetchOrderById.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || 'Không thể tải thông tin đơn hàng';
             });
     }
 });

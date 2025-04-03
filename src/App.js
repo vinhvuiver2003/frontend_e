@@ -13,12 +13,13 @@ import OrderSuccess from './pages/Checkout/OrderSuccess';
 import AccountLayout from './pages/Account/Layout';
 import Profile from './pages/Account/Profile';
 import Orders from './pages/Account/Orders';
-import OrderDetail from './pages/Account/OrderDetail';
+import UserOrderDetail from './pages/Account/OrderDetail';
 import AdminLayout from './pages/Admin/Layout';
 import Dashboard from './pages/Admin/Dashboard';
 import ProductsManagement from './pages/Admin/ProductsManagement';
 import ProductForm from './pages/Admin/ProductForm';
 import OrdersManagement from './pages/Admin/OrdersManagement';
+import AdminOrderDetail from './pages/Admin/OrderDetail';
 import UsersManagement from './pages/Admin/UsersManagement';
 import CategoriesManagement from './pages/Admin/CategoriesManagement';
 import BrandsManagement from './pages/Admin/BrandsManagement';
@@ -73,7 +74,7 @@ function App() {
                             <Route path="/account" element={<AccountLayout />}>
                                 <Route path="profile" element={<Profile />} />
                                 <Route path="orders" element={<Orders />} />
-                                <Route path="orders/:id" element={<OrderDetail />} />
+                                <Route path="orders/:id" element={<UserOrderDetail />} />
                                 {/* Các route con khác sẽ được thêm sau */}
                             </Route>
                         </Route>
@@ -86,6 +87,7 @@ function App() {
                                 <Route path="products/create" element={<ProductForm />} />
                                 <Route path="products/:id/edit" element={<ProductForm />} />
                                 <Route path="orders" element={<OrdersManagement />} />
+                                <Route path="orders/:id" element={<AdminOrderDetail />} />
                                 <Route path="users" element={<UsersManagement />} />
                                 <Route path="categories" element={<CategoriesManagement />} />
                                 <Route path="brands" element={<BrandsManagement />} />
