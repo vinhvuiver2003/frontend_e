@@ -24,11 +24,11 @@ export const fetchProducts = createAsyncThunk(
             let response;
             
             if (categoryId) {
-                response = await productService.getProductsByCategory(categoryId, page, size);
+                response = await productService.getProductsByCategory(categoryId, page, size, sortBy, sortDir);
             } else if (brandId) {
-                response = await productService.getProductsByBrand(brandId, page, size);
+                response = await productService.getProductsByBrand(brandId, page, size, sortBy, sortDir);
             } else if (minPrice !== undefined && maxPrice !== undefined) {
-                response = await productService.filterProductsByPrice(minPrice, maxPrice, page, size);
+                response = await productService.filterProductsByPrice(minPrice, maxPrice, page, size, sortBy, sortDir);
             } else {
                 response = await productService.getAllProducts(page, size, sortBy, sortDir);
             }

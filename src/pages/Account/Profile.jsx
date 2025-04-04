@@ -105,21 +105,28 @@ const Profile = () => {
 
         try {
             // Gọi API để cập nhật thông tin người dùng
-            // Ví dụ:
-            // await authService.updateProfile(formData);
+            const response = await authService.updateProfile({
+                ...formData,
+                id: user.id
+            });
+            
+            if (response && response.data) {
+                // Update in Redux store
+                dispatch(updateUserProfile(response.data.data));
+                
+                setIsEditing(false);
+                setSubmitSuccess(true);
 
-            // Update in Redux store
-            dispatch(updateUserProfile(formData));
-
-            setIsEditing(false);
-            setSubmitSuccess(true);
-
-            // Ẩn thông báo thành công sau 3 giây
-            setTimeout(() => {
-                setSubmitSuccess(false);
-            }, 3000);
+                // Ẩn thông báo thành công sau 3 giây
+                setTimeout(() => {
+                    setSubmitSuccess(false);
+                }, 3000);
+            }
         } catch (error) {
-            setErrors({ form: 'Đã xảy ra lỗi khi cập nhật thông tin. Vui lòng thử lại.' });
+            console.error("Lỗi khi cập nhật thông tin:", error);
+            setErrors({ 
+                form: error.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật thông tin. Vui lòng thử lại.' 
+            });
         } finally {
             setIsLoading(false);
         }

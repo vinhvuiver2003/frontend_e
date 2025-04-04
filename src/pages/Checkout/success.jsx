@@ -32,11 +32,15 @@ const OrderSuccess = () => {
     }
 
     const getPaymentMethodText = (method) => {
-        switch (method) {
-            case 'vnpay':
-                return 'Thanh toán qua VNPAY QR';
+        switch(method) {
+            case 'cod':
+                return 'Thanh toán khi nhận hàng (COD)';
+            case 'bank':
+                return 'Chuyển khoản ngân hàng';
+            case 'sepay':
+                return 'Thanh toán qua SEPAY';
             default:
-                return 'Thanh toán qua VNPAY QR';
+                return 'Thanh toán qua SEPAY';
         }
     };
 
@@ -83,14 +87,14 @@ const OrderSuccess = () => {
                             </div>
                             <p className="text-gray-700">{getPaymentMethodText(orderInfo.paymentMethod)}</p>
                             
-                            {orderInfo.paymentMethod === 'vnpay' && (
-                                <div className="mt-3 p-3 bg-white rounded-md border border-gray-200">
-                                    <p className="text-sm font-medium text-gray-700">Thông tin thanh toán:</p>
-                                    <p className="text-sm text-gray-600">Phương thức: VNPAY QR</p>
-                                    <p className="text-sm text-gray-600">Trạng thái: Đã thanh toán</p>
-                                    <p className="text-sm text-gray-600">Mã giao dịch: {orderInfo.transactionId || 'Chưa có thông tin'}</p>
-                                    <div className="mt-2 flex justify-center">
-                                        <img src="/images/vnpay-logo.png" alt="VNPAY" className="h-8" onError={(e) => e.target.style.display = 'none'} />
+                            {orderInfo.paymentMethod === 'sepay' && (
+                                <div className="mb-4">
+                                    <h3 className="text-lg font-medium mb-2">Thông tin thanh toán</h3>
+                                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-md">
+                                        <p className="text-sm text-gray-600">Phương thức: SEPAY</p>
+                                        <div className="flex items-center">
+                                            <img src="/images/sepay-logo.png" alt="SEPAY" className="h-8" onError={(e) => e.target.style.display = 'none'} />
+                                        </div>
                                     </div>
                                 </div>
                             )}

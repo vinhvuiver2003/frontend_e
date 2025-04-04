@@ -61,10 +61,6 @@ const ProductForm = () => {
   const [isProcessingStep, setIsProcessingStep] = useState(false); // State mới để theo dõi khi đang xử lý chuyển bước
   const fileInputRef = useRef(null);
 
-  // Thêm state cho quản lý ảnh biến thể
-  const [variantImages, setVariantImages] = useState({});
-  const [selectedVariantForImage, setSelectedVariantForImage] = useState(null);
-
   // Danh sách kích thước mẫu
   const sizeOptions = {
     clothing: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
@@ -159,25 +155,6 @@ const ProductForm = () => {
               }));
             
             setImages(generalImages);
-            
-            // Xử lý ảnh của từng biến thể
-            const variantImagesMap = {};
-            productImages
-              .filter(img => img.variantId)
-              .forEach(img => {
-                const variantId = img.variantId.toString();
-                if (!variantImagesMap[variantId]) {
-                  variantImagesMap[variantId] = [];
-                }
-                variantImagesMap[variantId].push({
-                  id: img.id,
-                  url: img.imageURL,
-                  isExisting: true,
-                  isMain: img.sortOrder === 0
-                });
-              });
-            
-            setVariantImages(variantImagesMap);
           }
         })
         .catch(error => {
@@ -572,25 +549,8 @@ const ProductForm = () => {
       }
     }
     
-    // Upload ảnh cho từng biến thể
-    for (const variantId in variantImages) {
-      const variantImgs = variantImages[variantId];
-      for (const img of variantImgs) {
-        if (!img.file || img.isExisting) continue;
-        
-        try {
-          const uploadPromise = uploadProductImage(
-            img.file, 
-            productId, 
-            variantId, 
-            img.isMain || false
-          );
-          uploadPromises.push(uploadPromise);
-        } catch (error) {
-          errors.push(`Lỗi upload ảnh cho biến thể ${variantId}: ${error.message}`);
-        }
-      }
-    }
+   
+
     
     if (errors.length > 0) {
       console.error('Có lỗi khi upload một số ảnh:', errors);
@@ -603,88 +563,6 @@ const ProductForm = () => {
       console.error('Lỗi khi upload ảnh:', error);
       return [];
     }
-  };
-
-  // Thêm ảnh cho biến thể
-  const handleAddVariantImage = (variantId, file) => {
-    const imageUrl = URL.createObjectURL(file);
-    const newImage = {
-      url: imageUrl,
-      file: file,
-      isExisting: false,
-      variantId: variantId,
-      isMain: false
-    };
-    
-    setVariantImages(prev => {
-      const existing = prev[variantId] || [];
-      return {
-        ...prev,
-        [variantId]: [...existing, newImage]
-      };
-    });
-  };
-
-  // Xóa ảnh biến thể
-  const handleRemoveVariantImage = async (variantId, index) => {
-    const existing = [...(variantImages[variantId] || [])];
-    const imageToRemove = existing[index];
-    
-    try {
-      // Nếu ảnh là blob URL (ảnh mới tải lên chưa lưu)
-      if (imageToRemove.url.startsWith('blob:')) {
-        URL.revokeObjectURL(imageToRemove.url);
-        existing.splice(index, 1);
-        setVariantImages(prev => ({
-          ...prev,
-          [variantId]: existing
-        }));
-        return;
-      }
-      
-      // Nếu ảnh đã tồn tại trên server có ID
-      if (imageToRemove.isExisting && imageToRemove.id) {
-        // Gọi API xóa ảnh
-        await productImageService.deleteProductImage(imageToRemove.id);
-        console.log(`Đã xóa ảnh biến thể có ID: ${imageToRemove.id}`);
-      }
-      
-      existing.splice(index, 1);
-      setVariantImages(prev => ({
-        ...prev,
-        [variantId]: existing
-      }));
-    } catch (error) {
-      console.error('Lỗi khi xóa ảnh biến thể:', error);
-      alert('Không thể xóa ảnh biến thể. Vui lòng thử lại sau.');
-    }
-  };
-
-  // Đặt ảnh chính cho biến thể
-  const setMainVariantImage = (variantId, index) => {
-    setVariantImages(prev => {
-      const existing = [...(prev[variantId] || [])];
-      return {
-        ...prev,
-        [variantId]: existing.map((img, i) => ({
-          ...img,
-          isMain: i === index
-        }))
-      };
-    });
-  };
-
-  // Xử lý ảnh biến thể khi chọn file
-  const handleVariantImageUpload = (e, variantId) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    for (const file of files) {
-      handleAddVariantImage(variantId, file);
-    }
-    
-    // Reset input để có thể upload cùng một file nhiều lần
-    e.target.value = null;
   };
 
   // Kiểm tra biến thể trùng lặp SKU trước khi submit
@@ -844,46 +722,6 @@ const ProductForm = () => {
             } catch (uploadError) {
               console.error('Lỗi khi upload ảnh chung:', uploadError);
               // Tiếp tục xử lý mặc dù có lỗi upload ảnh
-            }
-          }
-          
-          // 2. Upload ảnh cho từng biến thể
-          if (Object.keys(variantImages).length > 0) {
-            console.log('Đang upload ảnh cho các biến thể');
-            
-            // Lấy danh sách biến thể từ response API
-            const createdVariants = createdProduct.variants || [];
-            
-            // Map ID tạm thời với ID thực từ backend
-            const variantIdMap = {};
-            variants.forEach((variant, index) => {
-              if (createdVariants[index]) {
-                variantIdMap[variant.id] = createdVariants[index].id;
-              }
-            });
-            
-            console.log('Mapping biến thể tạm thời với ID thực:', variantIdMap);
-            
-            // Upload ảnh cho từng biến thể với ID thực
-            for (const tempVariantId in variantImages) {
-              const realVariantId = variantIdMap[tempVariantId];
-              if (!realVariantId) {
-                console.warn(`Không tìm thấy ID thực cho biến thể tạm thời ${tempVariantId}`);
-                continue;
-              }
-              
-              const variantImgs = variantImages[tempVariantId].filter(img => !img.isExisting && img.file);
-              if (variantImgs.length > 0) {
-                console.log(`Đang upload ${variantImgs.length} ảnh cho biến thể ID: ${realVariantId}`);
-                try {
-                  for (const img of variantImgs) {
-                    await uploadProductImage(img.file, productId, realVariantId, img.isMain || false);
-                  }
-                } catch (uploadError) {
-                  console.error(`Lỗi khi upload ảnh cho biến thể ${realVariantId}:`, uploadError);
-                  // Tiếp tục xử lý mặc dù có lỗi upload ảnh
-                }
-              }
             }
           }
           
@@ -1452,7 +1290,7 @@ const ProductForm = () => {
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Hình ảnh chung cho sản phẩm
+            Hình ảnh cho sản phẩm
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {images.map((image, index) => (
@@ -1491,90 +1329,6 @@ const ProductForm = () => {
             />
           </div>
           <p className="mt-2 text-sm text-gray-500">Hình ảnh đầu tiên sẽ được sử dụng làm ảnh chính cho sản phẩm.</p>
-        </div>
-
-        {/* Ảnh cho biến thể */}
-        <div className="mt-8">
-          <h3 className="text-md font-medium border-b pb-2 mb-4">Hình ảnh cho biến thể</h3>
-          
-          <div className="mb-4">
-            <label htmlFor="variantForImage" className="block text-sm font-medium text-gray-700 mb-1">
-              Chọn biến thể để tải ảnh
-            </label>
-            <select
-              id="variantForImage"
-              value={selectedVariantForImage || ''}
-              onChange={(e) => setSelectedVariantForImage(e.target.value || null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">-- Chọn biến thể --</option>
-              {variants.map((variant) => (
-                <option key={variant.id} value={variant.id}>
-                  {`${variant.color} - ${variant.size} (${variant.sku})`}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {selectedVariantForImage && (
-            <div className="border rounded-md p-4 bg-gray-50">
-              <h4 className="font-medium mb-3">
-                {variants.find(v => v.id == selectedVariantForImage)?.color} - {variants.find(v => v.id == selectedVariantForImage)?.size}
-              </h4>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
-                {(variantImages[selectedVariantForImage] || []).map((image, index) => (
-                  <div key={index} className="relative h-32 border rounded-md overflow-hidden group">
-                    <img
-                      src={getCompleteImageUrl(image.url)}
-                      alt={`Variant image ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-0 left-0 p-1 bg-black bg-opacity-50 text-white text-xs">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          checked={image.isMain}
-                          onChange={() => setMainVariantImage(selectedVariantForImage, index)}
-                          className="mr-1 h-3 w-3"
-                        />
-                        <span>Ảnh chính</span>
-                      </label>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveVariantImage(selectedVariantForImage, index)}
-                      className="absolute top-0 right-0 bg-red-500 text-white rounded-bl-md p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <XIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                
-                <button
-                  type="button"
-                  onClick={() => document.getElementById(`variant-file-${selectedVariantForImage}`).click()}
-                  className="h-32 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center text-gray-500 hover:text-gray-700 hover:border-gray-400"
-                >
-                  <PhotographIcon className="w-8 h-8 mb-2" />
-                  <span className="text-sm">Thêm ảnh biến thể</span>
-                </button>
-                
-                <input
-                  type="file"
-                  id={`variant-file-${selectedVariantForImage}`}
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => handleVariantImageUpload(e, selectedVariantForImage)}
-                  className="hidden"
-                />
-              </div>
-              
-              <p className="text-xs text-gray-500">
-                Chọn một ảnh đại diện cho biến thể bằng cách chọn "Ảnh chính".
-              </p>
-            </div>
-          )}
         </div>
       </div>
     );

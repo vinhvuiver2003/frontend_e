@@ -3,21 +3,25 @@ import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProductById } from '../../store/slices/productSlice';
 import { addToCartAsync } from '../../store/slices/cartSlice';
-import { StarIcon, ShoppingCartIcon } from '@heroicons/react/solid';
+import { deleteReview } from '../../store/slices/reviewSlice';
+import { StarIcon, ShoppingCartIcon, PencilIcon, TrashIcon } from '@heroicons/react/solid';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/outline';
 import ProductReviewForm from './ProductReviewForm';
 import { getCompleteImageUrl } from '../../utils/imageUtils';
+import axios from 'axios';
 
 const ProductDetail = () => {
     const { id } = useParams();
     const dispatch = useDispatch();
     const { product, loading, error } = useSelector(state => state.products);
-    const { isAuthenticated } = useSelector(state => state.auth);
+    const { isAuthenticated, user } = useSelector(state => state.auth);
 
     const [selectedVariant, setSelectedVariant] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [showReviewForm, setShowReviewForm] = useState(false);
+    const [editingReview, setEditingReview] = useState(null);
+    const [userHasReviewed, setUserHasReviewed] = useState(false);
 
     // Lưu trữ các màu và kích thước có sẵn
     const [colors, setColors] = useState([]);
@@ -26,6 +30,10 @@ const ProductDetail = () => {
     // Trạng thái đã chọn
     const [selectedColor, setSelectedColor] = useState('');
     const [selectedSize, setSelectedSize] = useState('');
+
+    // Thêm state cho sản phẩm ngẫu nhiên
+    const [randomProducts, setRandomProducts] = useState([]);
+    const [isLoadingRandom, setIsLoadingRandom] = useState(false);
 
     // Tải thông tin sản phẩm
     useEffect(() => {
@@ -86,6 +94,36 @@ const ProductDetail = () => {
         }
     }, [selectedVariant, quantity]);
 
+    // Kiểm tra xem người dùng đã đánh giá sản phẩm chưa
+    useEffect(() => {
+        if (isAuthenticated && user && product && product.reviews) {
+            const userReview = product.reviews.find(review => review.userId === user.id);
+            setUserHasReviewed(!!userReview);
+            
+            // Nếu đang hiển thị form và người dùng đã có đánh giá, thiết lập cho chế độ chỉnh sửa
+            if (showReviewForm && userReview) {
+                setEditingReview(userReview);
+            }
+        }
+    }, [isAuthenticated, user, product, showReviewForm]);
+
+    // Thêm useEffect để load sản phẩm ngẫu nhiên
+    useEffect(() => {
+        const fetchRandomProducts = async () => {
+            try {
+                setIsLoadingRandom(true);
+                const response = await axios.get('http://localhost:8080/api/products/random?limit=4');
+                setRandomProducts(response.data);
+            } catch (error) {
+                console.error('Error fetching random products:', error);
+            } finally {
+                setIsLoadingRandom(false);
+            }
+        };
+
+        fetchRandomProducts();
+    }, []);
+
     const handleColorChange = (color) => {
         setSelectedColor(color);
     };
@@ -139,8 +177,31 @@ const ProductDetail = () => {
 
     const handleReviewSubmitSuccess = () => {
         setShowReviewForm(false);
+        setEditingReview(null);
         // Tải lại thông tin sản phẩm để cập nhật đánh giá
         dispatch(fetchProductById(parseInt(id)));
+        // Hiển thị thông báo đánh giá thành công
+        alert('Cảm ơn bạn đã đánh giá sản phẩm này!');
+    };
+
+    const handleEditReview = (review) => {
+        setEditingReview(review);
+        setShowReviewForm(true);
+    };
+
+    const handleDeleteReview = async (reviewId) => {
+        if (window.confirm('Bạn có chắc chắn muốn xóa đánh giá này không?')) {
+            try {
+                // Sử dụng action trong Redux để xóa đánh giá
+                await dispatch(deleteReview(reviewId)).unwrap();
+                
+                // Sau khi xóa thành công, tải lại thông tin sản phẩm
+                dispatch(fetchProductById(parseInt(id)));
+                setUserHasReviewed(false);
+            } catch (error) {
+                console.error('Lỗi khi xóa đánh giá:', error);
+            }
+        }
     };
 
     if (loading) {
@@ -409,13 +470,20 @@ const ProductDetail = () => {
             <div className="mt-12">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">Đánh giá sản phẩm</h2>
-                    {!showReviewForm && (
-                        <button 
-                            onClick={() => setShowReviewForm(true)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        >
-                            Viết đánh giá
-                        </button>
+                    {!showReviewForm && isAuthenticated && (
+                        userHasReviewed ? (
+                            <p className="text-blue-600">Bạn đã đánh giá sản phẩm này. Bạn có thể chỉnh sửa đánh giá của mình bên dưới.</p>
+                        ) : (
+                            <button 
+                                onClick={() => setShowReviewForm(true)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                                Viết đánh giá
+                            </button>
+                        )
+                    )}
+                    {!isAuthenticated && (
+                        <p className="text-gray-600">Vui lòng <Link to="/login" className="text-blue-600 hover:underline">đăng nhập</Link> để đánh giá sản phẩm</p>
                     )}
                 </div>
 
@@ -423,7 +491,9 @@ const ProductDetail = () => {
                     <div className="mb-8">
                         <ProductReviewForm 
                             productId={parseInt(id)} 
-                            onSubmitSuccess={handleReviewSubmitSuccess} 
+                            onSubmitSuccess={handleReviewSubmitSuccess}
+                            initialData={editingReview}
+                            isEditing={!!editingReview} 
                         />
                     </div>
                 )}
@@ -442,12 +512,34 @@ const ProductDetail = () => {
                                                     <StarIcon key={i} className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`} />
                                                 ))}
                                             </div>
-                                            <span className="ml-2 text-sm text-gray-500">{review.author}</span>
+                                            <span className="ml-2 text-sm text-gray-500">{review.username}</span>
                                         </div>
                                     </div>
-                                    <span className="text-sm text-gray-500">
-                                        {new Date(review.createdAt).toLocaleDateString('vi-VN')}
-                                    </span>
+                                    <div className="flex items-center">
+                                        <span className="text-sm text-gray-500 mr-4">
+                                            {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                                        </span>
+                                        
+                                        {/* Hiển thị nút chỉnh sửa và xóa nếu là đánh giá của người dùng hiện tại */}
+                                        {isAuthenticated && user && review.userId === user.id && (
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    onClick={() => handleEditReview(review)}
+                                                    className="p-1 text-blue-600 hover:text-blue-800"
+                                                    title="Chỉnh sửa đánh giá"
+                                                >
+                                                    <PencilIcon className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteReview(review.id)}
+                                                    className="p-1 text-red-600 hover:text-red-800"
+                                                    title="Xóa đánh giá"
+                                                >
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <p className="mt-2 text-gray-600">{review.content}</p>
                                 
@@ -475,15 +567,40 @@ const ProductDetail = () => {
                 )}
             </div>
 
-            {/* Sản phẩm liên quan */}
+            {/* Thay thế phần Sản phẩm liên quan */}
             <div className="mt-12">
-                <h2 className="text-xl font-bold mb-4">Sản phẩm liên quan</h2>
+                <h2 className="text-xl font-bold mb-4">Có thể bạn cũng thích</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {/* Sẽ hiển thị sản phẩm liên quan ở đây */}
-                    <div className="bg-gray-100 rounded-lg p-6 text-center">
-                        <p className="text-gray-600">Sản phẩm liên quan sẽ hiển thị ở đây...</p>
-                    </div>
+                    {!isLoadingRandom && randomProducts.length > 0 ? (
+                        randomProducts.map((item) => (
+                            <div key={item.id} className="bg-white rounded-lg border overflow-hidden hover:shadow-lg transition-shadow">
+                                <Link to={`/products/${item.id}`}>
+                                    <div className="h-48 overflow-hidden">
+                                        <img 
+                                            src={item.images && item.images.length > 0 
+                                                ? getCompleteImageUrl(item.images[0]) 
+                                                : getCompleteImageUrl(item.thumbnail || item.image)}
+                                            alt={item.name} 
+                                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                        />
+                                    </div>
+                                    <div className="p-4">
+                                        <h3 className="font-medium text-gray-900 truncate">{item.name}</h3>
+                                        <div className="mt-2">
+                                            <span className="text-blue-600 font-semibold">
+                                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.basePrice)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Link>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="bg-gray-100 rounded-lg p-6 text-center col-span-full">
+                            <p className="text-gray-600">Đang tải sản phẩm...</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

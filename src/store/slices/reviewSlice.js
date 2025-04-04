@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { reviewService } from '../../services';
+import { toast } from 'react-toastify';
+import axios from 'axios';
 
 // Lấy đánh giá của một sản phẩm
 export const fetchProductReviews = createAsyncThunk(
@@ -43,12 +45,22 @@ export const fetchReviewById = createAsyncThunk(
 // Tạo đánh giá mới
 export const createReview = createAsyncThunk(
   'reviews/createReview',
-  async (reviewData, { rejectWithValue }) => {
+  async (reviewData, { rejectWithValue, getState }) => {
     try {
-      const response = await reviewService.createReview(reviewData);
-      return response.data.data;
+      const { auth } = getState();
+      const token = auth.token;
+      
+      const response = await axios.post('http://localhost:8080/api/reviews', reviewData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      toast.success('Đánh giá của bạn đã được gửi thành công!');
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 'Không thể gửi đánh giá. Vui lòng thử lại sau.';
+      toast.error(errorMessage);
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -56,12 +68,28 @@ export const createReview = createAsyncThunk(
 // Cập nhật đánh giá
 export const updateReview = createAsyncThunk(
   'reviews/updateReview',
-  async ({ id, reviewData }, { rejectWithValue }) => {
+  async (reviewData, { rejectWithValue, getState }) => {
     try {
-      const response = await reviewService.updateReview(id, reviewData);
-      return response.data.data;
+      const { auth } = getState();
+      const token = auth.token;
+      
+      console.log("Sending update with data:", reviewData); // Ghi log dữ liệu gửi lên
+      
+      const response = await axios.put(`http://localhost:8080/api/reviews/${reviewData.id}`, reviewData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log("Update response:", response.data); // Ghi log phản hồi
+      
+      toast.success('Đánh giá của bạn đã được cập nhật thành công!');
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      console.error("Update error:", error.response?.data || error); // Ghi log lỗi
+      const errorMessage = error.response?.data?.message || 'Không thể cập nhật đánh giá. Vui lòng thử lại sau.';
+      toast.error(errorMessage);
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -69,12 +97,22 @@ export const updateReview = createAsyncThunk(
 // Xóa đánh giá
 export const deleteReview = createAsyncThunk(
   'reviews/deleteReview',
-  async (id, { rejectWithValue }) => {
+  async (reviewId, { rejectWithValue, getState }) => {
     try {
-      await reviewService.deleteReview(id);
-      return id;
+      const { auth } = getState();
+      const token = auth.token;
+      
+      await axios.delete(`http://localhost:8080/api/reviews/${reviewId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      toast.success('Đánh giá đã được xóa thành công!');
+      return reviewId;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const errorMessage = error.response?.data?.message || 'Không thể xóa đánh giá. Vui lòng thử lại sau.';
+      toast.error(errorMessage);
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -93,16 +131,7 @@ export const checkPurchaseStatus = createAsyncThunk(
 );
 
 const initialState = {
-  productReviews: {
-    content: [],
-    pagination: {
-      totalElements: 0,
-      totalPages: 0,
-      page: 0,
-      size: 5,
-      last: true
-    }
-  },
+  productReviews: [],
   myReviews: {
     content: [],
     pagination: {
@@ -116,41 +145,42 @@ const initialState = {
   currentReview: null,
   canReview: false,
   loading: false,
-  error: null
+  error: null,
+  submitLoading: false,
+  submitError: null,
+  success: false
 };
 
 const reviewSlice = createSlice({
   name: 'reviews',
   initialState,
   reducers: {
-    clearReviewError: (state) => {
+    clearReviewErrors: (state) => {
       state.error = null;
+      state.submitError = null;
     },
     clearCurrentReview: (state) => {
       state.currentReview = null;
+    },
+    clearReviewStatus: (state) => {
+      state.error = null;
+      state.success = false;
     }
   },
   extraReducers: (builder) => {
     builder
-      // Xử lý fetchProductReviews
+      // Xử lý trạng thái khi lấy đánh giá
       .addCase(fetchProductReviews.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchProductReviews.fulfilled, (state, action) => {
         state.loading = false;
-        state.productReviews.content = action.payload.content;
-        state.productReviews.pagination = {
-          totalElements: action.payload.totalElements,
-          totalPages: action.payload.totalPages,
-          page: action.payload.page,
-          size: action.payload.size,
-          last: action.payload.last
-        };
+        state.productReviews = action.payload;
       })
       .addCase(fetchProductReviews.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Không thể tải đánh giá sản phẩm';
+        state.error = action.payload || 'Không thể tải đánh giá';
       })
 
       // Xử lý fetchMyReviews
@@ -188,26 +218,28 @@ const reviewSlice = createSlice({
         state.error = action.payload?.message || 'Không thể tải thông tin đánh giá';
       })
 
-      // Xử lý createReview
+      // Xử lý trạng thái khi tạo đánh giá mới
       .addCase(createReview.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        state.submitLoading = true;
+        state.submitError = null;
       })
       .addCase(createReview.fulfilled, (state, action) => {
-        state.loading = false;
-        // Thêm vào đầu danh sách đánh giá sản phẩm nếu cùng sản phẩm
-        if (state.productReviews.content.length > 0 && 
-            action.payload.productId === state.productReviews.content[0]?.productId) {
+        state.submitLoading = false;
+        state.success = true;
+        // Thêm đánh giá mới vào đầu danh sách nếu có dữ liệu
+        if (state.productReviews && state.productReviews.content) {
           state.productReviews.content.unshift(action.payload);
-          state.productReviews.pagination.totalElements += 1;
+          if (state.productReviews.totalElements !== undefined) {
+            state.productReviews.totalElements += 1;
+          }
         }
         // Thêm vào đầu danh sách đánh giá của tôi
         state.myReviews.content.unshift(action.payload);
         state.myReviews.pagination.totalElements += 1;
       })
       .addCase(createReview.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || 'Không thể tạo đánh giá';
+        state.submitLoading = false;
+        state.submitError = action.payload;
       })
 
       // Xử lý updateReview
@@ -217,10 +249,13 @@ const reviewSlice = createSlice({
       })
       .addCase(updateReview.fulfilled, (state, action) => {
         state.loading = false;
+        state.success = true;
         // Cập nhật trong danh sách đánh giá sản phẩm
-        const productReviewIndex = state.productReviews.content.findIndex(review => review.id === action.payload.id);
-        if (productReviewIndex !== -1) {
-          state.productReviews.content[productReviewIndex] = action.payload;
+        if (state.productReviews && state.productReviews.content) {
+          const productReviewIndex = state.productReviews.content.findIndex(review => review.id === action.payload.id);
+          if (productReviewIndex !== -1) {
+            state.productReviews.content[productReviewIndex] = action.payload;
+          }
         }
         // Cập nhật trong danh sách đánh giá của tôi
         const myReviewIndex = state.myReviews.content.findIndex(review => review.id === action.payload.id);
@@ -234,7 +269,7 @@ const reviewSlice = createSlice({
       })
       .addCase(updateReview.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Không thể cập nhật đánh giá';
+        state.error = action.payload || 'Không thể cập nhật đánh giá';
       })
 
       // Xử lý deleteReview
@@ -244,10 +279,13 @@ const reviewSlice = createSlice({
       })
       .addCase(deleteReview.fulfilled, (state, action) => {
         state.loading = false;
+        state.success = true;
         // Xóa khỏi danh sách đánh giá sản phẩm
-        state.productReviews.content = state.productReviews.content.filter(review => review.id !== action.payload);
-        if (state.productReviews.pagination.totalElements > 0) {
-          state.productReviews.pagination.totalElements -= 1;
+        if (state.productReviews && state.productReviews.content) {
+          state.productReviews.content = state.productReviews.content.filter(review => review.id !== action.payload);
+          if (state.productReviews.totalElements !== undefined && state.productReviews.totalElements > 0) {
+            state.productReviews.totalElements -= 1;
+          }
         }
         // Xóa khỏi danh sách đánh giá của tôi
         state.myReviews.content = state.myReviews.content.filter(review => review.id !== action.payload);
@@ -261,7 +299,7 @@ const reviewSlice = createSlice({
       })
       .addCase(deleteReview.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Không thể xóa đánh giá';
+        state.error = action.payload || 'Không thể xóa đánh giá';
       })
 
       // Xử lý checkPurchaseStatus
@@ -281,6 +319,5 @@ const reviewSlice = createSlice({
   }
 });
 
-export const { clearReviewError, clearCurrentReview } = reviewSlice.actions;
-
+export const { clearReviewErrors, clearCurrentReview, clearReviewStatus } = reviewSlice.actions;
 export default reviewSlice.reducer; 

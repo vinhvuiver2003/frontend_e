@@ -1,13 +1,21 @@
 // src/store/slices/authSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import authService from '../../services/authService';
+import { fetchCart } from './cartSlice';  // Import thêm fetchCart từ cartSlice
 
 // Async thunk để đăng nhập
 export const loginUser = createAsyncThunk(
     'auth/login',
-    async ({ usernameOrEmail, password }, { rejectWithValue }) => {
+    async ({ usernameOrEmail, password }, { rejectWithValue, dispatch }) => {
         try {
             const response = await authService.login({ usernameOrEmail, password });
+            
+            // Sau khi đăng nhập thành công, lấy giỏ hàng của người dùng
+            // Dùng setTimeout để chắc chắn token đã được lưu vào localStorage
+            setTimeout(() => {
+                dispatch(fetchCart());
+            }, 300);
+            
             return response.data;
         } catch (error) {
             return rejectWithValue(error);

@@ -44,10 +44,27 @@ const ProductList = () => {
 
         params[name] = value;
 
-        if (name === 'category' || name === 'brand' || name === 'minPrice' || name === 'maxPrice') {
-            params.page = 0; // Reset về trang đầu tiên khi thay đổi bộ lọc
+        // Reset về trang đầu tiên khi thay đổi bất kỳ bộ lọc hoặc sắp xếp nào
+        if (name === 'category' || name === 'brand' || name === 'minPrice' || 
+            name === 'maxPrice' || name === 'sortBy' || name === 'sortDir') {
+            params.page = 0;
         }
 
+        setSearchParams(params);
+    };
+
+    const handleSortChange = (e) => {
+        const [newSortBy, newSortDir] = e.target.value.split('-');
+        
+        const params = {};
+        for (const [key, val] of searchParams.entries()) {
+            params[key] = val;
+        }
+        
+        params.sortBy = newSortBy;
+        params.sortDir = newSortDir;
+        params.page = 0; // Reset về trang đầu tiên khi thay đổi sắp xếp
+        
         setSearchParams(params);
     };
 
@@ -155,21 +172,14 @@ const ProductList = () => {
                                 <select
                                     name="sortBy"
                                     value={`${sortBy}-${sortDir}`}
-                                    onChange={(e) => {
-                                        const [newSortBy, newSortDir] = e.target.value.split('-');
-                                        handleFilterChange({
-                                            target: { name: 'sortBy', value: newSortBy }
-                                        });
-                                        handleFilterChange({
-                                            target: { name: 'sortDir', value: newSortDir }
-                                        });
-                                    }}
+                                    onChange={handleSortChange}
                                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                 >
                                     <option value="id-desc">Mới nhất</option>
+                                    <option value="name-asc">Tên A-Z</option>
+                                    <option value="name-desc">Tên Z-A</option>
                                     <option value="basePrice-asc">Giá thấp đến cao</option>
                                     <option value="basePrice-desc">Giá cao đến thấp</option>
-                                    <option value="averageRating-desc">Đánh giá cao nhất</option>
                                 </select>
                             </div>
                         </div>
@@ -241,21 +251,14 @@ const ProductList = () => {
                         <select
                             name="sortBy"
                             value={`${sortBy}-${sortDir}`}
-                            onChange={(e) => {
-                                const [newSortBy, newSortDir] = e.target.value.split('-');
-                                handleFilterChange({
-                                    target: { name: 'sortBy', value: newSortBy }
-                                });
-                                handleFilterChange({
-                                    target: { name: 'sortDir', value: newSortDir }
-                                });
-                            }}
+                            onChange={handleSortChange}
                             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         >
                             <option value="id-desc">Mới nhất</option>
+                            <option value="name-asc">Tên A-Z</option>
+                            <option value="name-desc">Tên Z-A</option>
                             <option value="basePrice-asc">Giá thấp đến cao</option>
                             <option value="basePrice-desc">Giá cao đến thấp</option>
-                            <option value="averageRating-desc">Đánh giá cao nhất</option>
                         </select>
                     </div>
                 </div>

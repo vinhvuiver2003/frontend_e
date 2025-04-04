@@ -17,6 +17,27 @@ export const getCartById = async (id) => {
 
 // Thêm sản phẩm vào giỏ hàng
 export const addItemToCart = async (cartId, cartItemData) => {
+  // Nếu cartId là null hoặc "null", tạo giỏ hàng mới
+  if (!cartId || cartId === 'null') {
+    try {
+      // Tạo giỏ hàng mới
+      const createCartResponse = await api.post('/cart', {});
+      // Lấy cartId từ response
+      if (createCartResponse.data && createCartResponse.data.data) {
+        cartId = createCartResponse.data.data.id;
+        // Lưu cartId mới
+        localStorage.setItem('cartId', cartId);
+      } else {
+        console.error('Tạo giỏ hàng mới thất bại:', createCartResponse);
+        throw new Error('Không thể tạo giỏ hàng mới');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tạo giỏ hàng mới:', error);
+      throw error;
+    }
+  }
+  
+  // Thêm sản phẩm vào giỏ hàng với cartId đã có
   return await api.post(`/cart/${cartId}/items`, cartItemData);
 };
 

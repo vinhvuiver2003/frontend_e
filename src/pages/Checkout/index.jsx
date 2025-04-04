@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { clearCartAsync } from '../../store/slices/cartSlice';
 import { checkoutOrder } from '../../store/slices/orderSlice';
 import { toast } from 'react-toastify';
+import orderService from '../../services/orderService';
 
 // Hàm tiện ích để format giá
 const formatPrice = (price) => {
@@ -173,7 +174,7 @@ const Checkout = () => {
                 phone: formData.phone,
                 shippingAddress: `${formData.address}, ${formData.city}`,
                 note: formData.notes,
-                paymentMethod: formData.paymentMethod,
+                paymentMethod: 'sepay',
                 shippingMethod: formData.shippingMethod,
             };
             
@@ -182,24 +183,15 @@ const Checkout = () => {
                 checkoutData.promotionCode = promotion.code;
             }
             
-            // Xử lý thanh toán dựa trên phương thức đã chọn
-            if (formData.paymentMethod === 'card') {
-                // Thêm thông tin thẻ
-                checkoutData.cardInfo = {
-                    cardNumber: formData.cardNumber.replace(/\s+/g, ''),
-                    cardName: formData.cardName,
-                    cardExpiry: formData.cardExpiry,
-                    cardCvc: formData.cardCvc
-                };
-            } else if (formData.paymentMethod === 'momo') {
-                // Thêm thông tin MoMo
-                checkoutData.momoPhone = formData.momoPhone;
-            } else if (formData.paymentMethod === 'bank') {
-                // Thông tin chuyển khoản có thể được xử lý ở backend
-            }
-            
             // Gọi API đặt hàng
             const result = await dispatch(checkoutOrder(checkoutData)).unwrap();
+            
+            // Nếu chọn thanh toán qua SePay, tạo URL thanh toán và chuyển hướng
+            if (checkoutData.paymentMethod === 'sepay') {
+                const response = await orderService.createSePayPaymentUrl(result.id, 'ALL');
+                window.location.href = response.data.data;
+                return;
+            }
             
             // Hiển thị thông báo đặt hàng thành công bằng toast
             toast.success('Đặt hàng thành công! Cảm ơn bạn đã mua sắm.');
@@ -231,7 +223,7 @@ const Checkout = () => {
                         discount: discountAmount,
                         shipping: formData.shippingMethod === 'express' ? 50000 : 20000,
                         total: totalAmount - discountAmount + (formData.shippingMethod === 'express' ? 50000 : 20000),
-                        paymentMethod: formData.paymentMethod,
+                        paymentMethod: 'sepay',
                         shippingMethod: formData.shippingMethod
                     }
                 }
@@ -487,16 +479,16 @@ const Checkout = () => {
                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                 />
                                 <label htmlFor="vnpay" className="ml-3 block text-sm font-medium text-gray-700">
-                                    Thanh toán qua VNPAY QR
+                                    Thanh toán qua SEPAY
                                 </label>
                             </div>
                             
                             <div className="pl-7 mt-2 p-3 bg-gray-50 rounded-md">
                                 <p className="text-sm font-medium text-gray-700">Thông tin thanh toán:</p>
-                                <p className="text-sm text-gray-600">Bạn sẽ được chuyển đến cổng thanh toán VNPAY để quét mã QR thanh toán.</p>
+                                <p className="text-sm text-gray-600">Bạn sẽ được chuyển đến cổng thanh toán SEPAY để quét mã QR thanh toán.</p>
                                 <p className="text-sm text-gray-600">Sau khi thanh toán thành công, đơn hàng sẽ được xử lý ngay lập tức.</p>
                                 <div className="mt-2 flex justify-center">
-                                    <img src="/images/vnpay-logo.png" alt="VNPAY" className="h-10" onError={(e) => e.target.style.display = 'none'} />
+                                    <img src="/images/sepay-logo.png" alt="SEPAY" className="h-10" onError={(e) => e.target.style.display = 'none'} />
                                 </div>
                             </div>
                         </div>
@@ -556,7 +548,7 @@ const Checkout = () => {
                             
                             <div className="flex justify-between pt-2">
                                 <span className="text-gray-600">Phương thức thanh toán</span>
-                                <span className="font-medium text-blue-600">VNPAY QR</span>
+                                <span className="font-medium text-blue-600">SEPAY</span>
                             </div>
                         </div>
 
@@ -569,7 +561,7 @@ const Checkout = () => {
                                     isLoading ? 'opacity-70 cursor-not-allowed' : ''
                                 }`}
                             >
-                                {isLoading ? 'Đang xử lý...' : 'Thanh toán qua VNPAY'}
+                                {isLoading ? 'Đang xử lý...' : 'Thanh toán qua SEPAY'}
                             </button>
                             
                             <button

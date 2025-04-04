@@ -20,8 +20,22 @@ export const fetchCart = createAsyncThunk(
       let response;
 
       if (auth.isAuthenticated) {
-        // Nếu đã đăng nhập, lấy giỏ hàng theo user
-        response = await cartService.getMyCart();
+        try {
+          // Nếu đã đăng nhập, lấy giỏ hàng theo user
+          response = await cartService.getMyCart();
+        } catch (error) {
+          // Nếu không tìm thấy giỏ hàng (404) hoặc có lỗi khác
+          if (error.response && error.response.status === 404) {
+            // Tạo giỏ hàng mới cho người dùng đã đăng nhập
+            console.log('Người dùng chưa có giỏ hàng, đang tạo giỏ hàng mới...');
+            response = await cartService.addItemToCart(null, {
+              productId: null,  // Không cần sản phẩm, chỉ cần tạo giỏ hàng trống
+              quantity: 0
+            });
+            return response.data.data || { id: response.data.data.id, items: [], totalQuantity: 0, totalAmount: 0 };
+          }
+          throw error; // Nếu là lỗi khác, ném ra để xử lý ở catch bên ngoài
+        }
       } else {
         // Nếu chưa đăng nhập, tạo hoặc lấy sessionId và lấy giỏ hàng theo sessionId
         const sessionId = getSessionId();

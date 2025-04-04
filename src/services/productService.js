@@ -11,23 +11,23 @@ export const getProductById = async (id) => {
 };
 
 // Lấy danh sách sản phẩm theo danh mục
-export const getProductsByCategory = async (categoryId, page = 0, size = 12) => {
-  return await api.get(`/products/category/${categoryId}?page=${page}&size=${size}`);
+export const getProductsByCategory = async (categoryId, page = 0, size = 12, sortBy = 'id', sortDir = 'desc') => {
+  return await api.get(`/products/category/${categoryId}?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
 };
 
 // Lấy danh sách sản phẩm theo thương hiệu
-export const getProductsByBrand = async (brandId, page = 0, size = 12) => {
-  return await api.get(`/products/brand/${brandId}?page=${page}&size=${size}`);
+export const getProductsByBrand = async (brandId, page = 0, size = 12, sortBy = 'id', sortDir = 'desc') => {
+  return await api.get(`/products/brand/${brandId}?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
 };
 
 // Tìm kiếm sản phẩm theo từ khóa
-export const searchProducts = async (keyword, page = 0, size = 12) => {
-  return await api.get(`/products/search?keyword=${keyword}&page=${page}&size=${size}`);
+export const searchProducts = async (keyword, page = 0, size = 12, sortBy = 'id', sortDir = 'desc') => {
+  return await api.get(`/products/search?keyword=${keyword}&page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
 };
 
 // Lọc sản phẩm theo khoảng giá
-export const filterProductsByPrice = async (minPrice, maxPrice, page = 0, size = 12) => {
-  return await api.get(`/products/filter/price?minPrice=${minPrice}&maxPrice=${maxPrice}&page=${page}&size=${size}`);
+export const filterProductsByPrice = async (minPrice, maxPrice, page = 0, size = 12, sortBy = 'id', sortDir = 'desc') => {
+  return await api.get(`/products/filter/price?minPrice=${minPrice}&maxPrice=${maxPrice}&page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`);
 };
 
 // Lấy danh sách sản phẩm mới nhất

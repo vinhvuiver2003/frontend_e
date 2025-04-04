@@ -1,19 +1,29 @@
-import React, { useState, useRef } from 'react';
-import { useSelector } from 'react-redux';
-import { StarIcon, XIcon, PhotographIcon } from '@heroicons/react/solid';
+import React, { useState, useRef, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { StarIcon } from '@heroicons/react/solid';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/outline';
+import { createReview, updateReview } from '../../store/slices/reviewSlice';
 
-const ProductReviewForm = ({ productId, onSubmitSuccess }) => {
+const ProductReviewForm = ({ productId, onSubmitSuccess, initialData = null, isEditing = false }) => {
+  const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector(state => state.auth);
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [images, setImages] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
-  const fileInputRef = useRef(null);
+
+  // Khởi tạo form với dữ liệu ban đầu nếu đang trong chế độ chỉnh sửa
+  useEffect(() => {
+    if (initialData) {
+      console.log("Initializing form with data:", initialData);
+      setRating(initialData.rating || 0);
+      setTitle(initialData.title || '');
+      setContent(initialData.content || '');
+    }
+  }, [initialData]);
 
   const handleRatingClick = (value) => {
     setRating(value);
@@ -40,68 +50,6 @@ const ProductReviewForm = ({ productId, onSubmitSuccess }) => {
       delete newErrors.content;
       setErrors(newErrors);
     }
-  };
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    // Chỉ cho phép tối đa 5 ảnh
-    if (images.length + files.length > 5) {
-      setErrors({
-        ...errors,
-        images: 'Bạn chỉ có thể tải lên tối đa 5 ảnh'
-      });
-      return;
-    }
-
-    const newImages = [];
-    const maxSize = 5 * 1024 * 1024; // 5MB
-
-    files.forEach(file => {
-      // Kiểm tra kích thước file
-      if (file.size > maxSize) {
-        setErrors({
-          ...errors,
-          images: 'Mỗi ảnh không được vượt quá 5MB'
-        });
-        return;
-      }
-
-      // Kiểm tra loại file
-      if (!file.type.startsWith('image/')) {
-        setErrors({
-          ...errors,
-          images: 'Chỉ hỗ trợ định dạng ảnh (JPG, PNG, GIF)'
-        });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        newImages.push(e.target.result);
-        
-        // Nếu đã đọc xong tất cả file, cập nhật state
-        if (newImages.length === files.length) {
-          setImages([...images, ...newImages]);
-          if (errors.images) {
-            const newErrors = { ...errors };
-            delete newErrors.images;
-            setErrors(newErrors);
-          }
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Reset file input để có thể chọn lại cùng một file
-    e.target.value = '';
-  };
-
-  const handleRemoveImage = (index) => {
-    const newImages = [...images];
-    newImages.splice(index, 1);
-    setImages(newImages);
   };
 
   const validateForm = () => {
@@ -145,27 +93,32 @@ const ProductReviewForm = ({ productId, onSubmitSuccess }) => {
     setSubmitStatus(null);
 
     try {
-      // Mô phỏng API call để gửi đánh giá
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Đối tượng review để gửi lên server
+      // Chuẩn bị dữ liệu đánh giá
       const reviewData = {
         productId,
         rating,
         title,
-        content,
-        userId: user.id,
-        userName: `${user.firstName} ${user.lastName}`,
-        images: images.map(img => img.file) // Trong thực tế, bạn cần upload ảnh lên server
+        content
       };
 
-      console.log('Submitting review:', reviewData);
+      console.log("Submitting review data:", reviewData);
 
+      // Nếu đang trong chế độ chỉnh sửa, cập nhật đánh giá hiện có
+      if (isEditing && initialData) {
+        // Đảm bảo ID được gửi đi
+        await dispatch(updateReview({ 
+          id: initialData.id, 
+          ...reviewData 
+        })).unwrap();
+      } else {
+        // Tạo đánh giá mới
+        await dispatch(createReview(reviewData)).unwrap();
+      }
+      
       // Reset form sau khi gửi thành công
       setRating(0);
       setTitle('');
       setContent('');
-      setImages([]);
       setSubmitStatus('success');
       
       // Gọi callback từ component cha nếu có
@@ -175,7 +128,9 @@ const ProductReviewForm = ({ productId, onSubmitSuccess }) => {
     } catch (error) {
       console.error('Error submitting review:', error);
       setSubmitStatus('error');
-      setErrors({ submit: 'Đã xảy ra lỗi khi gửi đánh giá. Vui lòng thử lại.' });
+      setErrors({ 
+        submit: error.message || 'Đã xảy ra lỗi khi gửi đánh giá. Vui lòng thử lại.' 
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -183,12 +138,18 @@ const ProductReviewForm = ({ productId, onSubmitSuccess }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
-      <h3 className="text-lg font-medium mb-4">Viết đánh giá của bạn</h3>
+      <h3 className="text-lg font-medium mb-4">
+        {isEditing ? 'Chỉnh sửa đánh giá của bạn' : 'Viết đánh giá của bạn'}
+      </h3>
 
       {submitStatus === 'success' && (
         <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded flex items-center">
           <CheckCircleIcon className="h-5 w-5 mr-2" />
-          <span>Cảm ơn bạn đã đánh giá sản phẩm! Đánh giá của bạn sẽ được hiển thị sau khi được phê duyệt.</span>
+          <span>
+            {isEditing 
+              ? 'Đánh giá của bạn đã được cập nhật thành công!' 
+              : 'Cảm ơn bạn đã đánh giá sản phẩm! Đánh giá của bạn sẽ được hiển thị sau khi được phê duyệt.'}
+          </span>
         </div>
       )}
 
@@ -276,53 +237,6 @@ const ProductReviewForm = ({ productId, onSubmitSuccess }) => {
           )}
         </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Thêm ảnh (tối đa 5 ảnh)
-          </label>
-          <div className="flex flex-wrap items-center gap-4">
-            {images.map((src, index) => (
-              <div key={index} className="relative w-20 h-20">
-                <img
-                  src={src}
-                  alt={`Uploaded ${index + 1}`}
-                  className="w-full h-full object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                >
-                  <XIcon className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            
-            {images.length < 5 && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current.click()}
-                className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center text-gray-500 hover:text-gray-700 hover:border-gray-400"
-              >
-                <PhotographIcon className="w-8 h-8" />
-                <span className="text-xs mt-1">Thêm ảnh</span>
-              </button>
-            )}
-            
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              multiple
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-          </div>
-          {errors.images && (
-            <p className="mt-1 text-sm text-red-500">{errors.images}</p>
-          )}
-        </div>
-
         <div>
           <button
             type="submit"
@@ -331,7 +245,7 @@ const ProductReviewForm = ({ productId, onSubmitSuccess }) => {
               (isSubmitting || submitStatus === 'success') ? 'opacity-70 cursor-not-allowed' : ''
             }`}
           >
-            {isSubmitting ? 'Đang gửi...' : submitStatus === 'success' ? 'Đã gửi' : 'Gửi đánh giá'}
+            {isSubmitting ? 'Đang gửi...' : submitStatus === 'success' ? 'Đã gửi' : isEditing ? 'Cập nhật đánh giá' : 'Gửi đánh giá'}
           </button>
         </div>
       </form>

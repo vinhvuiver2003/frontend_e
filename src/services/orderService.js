@@ -92,7 +92,7 @@ export const deleteOrder = async (id) => {
  * @returns {Promise<Object>} - Kết quả API
  */
 export const confirmDelivery = async (id) => {
-  return await api.put(`/orders/${id}/confirm-delivery`);
+  return await api.patch(`/orders/${id}/confirm-delivery`);
 };
 
 /**
@@ -115,6 +115,16 @@ export const getSalesStats = async (startDate, endDate) => {
   return await api.get(`/orders/stats?startDate=${startDate}&endDate=${endDate}`);
 };
 
+/**
+ * Tạo URL thanh toán qua SePay
+ * @param {number} orderId - ID của đơn hàng
+ * @param {string} paymentMethod - Phương thức thanh toán (ATM, CC, EWALLET, ...)
+ * @returns {Promise<Object>} - Kết quả API
+ */
+export const createSePayPaymentUrl = async (orderId, paymentMethod) => {
+  return await api.post(`/payments/create-sepay-url?orderId=${orderId}&paymentMethod=${paymentMethod || ''}`);
+};
+
 const orderService = {
   getAllOrders,
   getOrderById,
@@ -127,7 +137,8 @@ const orderService = {
   deleteOrder,
   getSalesStats,
   confirmDelivery,
-  cancelOrder
+  cancelOrder,
+  createSePayPaymentUrl
 };
 
 export default orderService; 
