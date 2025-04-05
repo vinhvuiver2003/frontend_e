@@ -5,6 +5,9 @@ import { fetchCart, mergeCartsAsync } from './store/slices/cartSlice';
 import Home from './pages/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
+import VerifyAccount from './pages/Auth/VerifyAccount';
 import ProductList from './pages/Products/ProductList';
 import ProductDetail from './pages/Products/ProductDetail';
 import Cart from './pages/Cart';
@@ -12,6 +15,7 @@ import Checkout from './pages/Checkout';
 import OrderSuccess from './pages/Checkout/OrderSuccess';
 import AccountLayout from './pages/Account/Layout';
 import Profile from './pages/Account/Profile';
+import ChangePassword from './pages/Account/ChangePassword';
 import Orders from './pages/Account/Orders';
 import UserOrderDetail from './pages/Account/OrderDetail';
 import AdminLayout from './pages/Admin/Layout';
@@ -64,6 +68,9 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="/verify-account" element={<VerifyAccount />} />
                         <Route path="/products" element={<ProductList />} />
                         <Route path="/products/:id" element={<ProductDetail />} />
                         <Route path="/cart" element={<Cart />} />
@@ -76,6 +83,7 @@ function App() {
                             {/* Routes cho trang tài khoản */}
                             <Route path="/account" element={<AccountLayout />}>
                                 <Route path="profile" element={<Profile />} />
+                                <Route path="change-password" element={<ChangePassword />} />
                                 <Route path="orders" element={<Orders />} />
                                 <Route path="orders/:id" element={<UserOrderDetail />} />
                                 {/* Các route con khác sẽ được thêm sau */}

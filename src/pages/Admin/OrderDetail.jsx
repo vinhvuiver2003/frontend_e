@@ -333,16 +333,7 @@ const OrderDetail = () => {
                           <tr key={item.id}>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
-                                <div className="flex-shrink-0 h-14 w-14">
-                                  {item.productImage && (
-                                    <img
-                                      className="h-14 w-14 object-cover rounded-md"
-                                      src={`${process.env.REACT_APP_BASE_URL}/uploads/${item.productImage}`}
-                                      alt={item.productName}
-                                    />
-                                  )}
-                                </div>
-                                <div className="ml-4">
+                                <div className="ml-0">
                                   <div className="text-sm font-medium text-gray-900">
                                     <Link to={`/admin/products/${item.productId}`} className="hover:text-blue-600">
                                       {item.productName}

@@ -217,16 +217,7 @@ const OrderDetail = () => {
               <div className="divide-y divide-gray-200">
                 {currentOrder.items.map((item) => (
                   <div key={item.id} className="p-4 flex">
-                    <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded overflow-hidden">
-                      {item.productImage && (
-                        <img 
-                          src={`${process.env.REACT_APP_API_BASE_URL}/uploads/${item.productImage}`} 
-                          alt={item.productName}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </div>
-                    <div className="ml-4 flex-1">
+                    <div className="ml-0 flex-1">
                       <div className="flex justify-between">
                         <div>
                           <h3 className="text-sm font-medium text-gray-900">

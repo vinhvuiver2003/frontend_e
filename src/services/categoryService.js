@@ -36,7 +36,7 @@ const getAllCategoriesNoPage = async () => {
  */
 const getParentCategories = async () => {
   try {
-    const response = await api.get('/categories/parent');
+    const response = await api.get('/categories/all');
     return response.data;
   } catch (error) {
     throw error;

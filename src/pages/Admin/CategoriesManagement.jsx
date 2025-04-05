@@ -237,7 +237,9 @@ const CategoriesManagement = () => {
               <MenuItem value="">Không có</MenuItem>
               {parentCategories.map((category) => (
                 <MenuItem key={category.id} value={category.id}>
-                  {category.name}
+                  {category.name} {category.status === 'inactive' && 
+                    <span style={{ color: 'red', fontSize: '0.8rem', marginLeft: '8px' }}>(Không hoạt động)</span>
+                  }
                 </MenuItem>
               ))}
             </Select>

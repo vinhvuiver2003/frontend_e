@@ -327,6 +327,12 @@ const ProductDetail = () => {
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold mb-2">{product.name}</h1>
 
+                    {product.status === "inactive" || product.status === "discontinued" ? (
+                        <div className="mb-4 bg-red-100 text-red-800 px-3 py-2 rounded-md inline-block">
+                            {product.status === "inactive" ? "Sản phẩm không hoạt động" : "Ngừng kinh doanh"}
+                        </div>
+                    ) : null}
+
                     <div className="flex items-center mb-4">
                         <div className="flex text-yellow-400">
                             {[...Array(5)].map((_, i) => (
@@ -439,9 +445,9 @@ const ProductDetail = () => {
                         <div className="mb-8">
                             <button
                                 onClick={handleAddToCart}
-                                disabled={!selectedVariant || selectedVariant.stockQuantity === 0}
+                                disabled={!selectedVariant || selectedVariant.stockQuantity === 0 || product.status === "inactive" || product.status === "discontinued"}
                                 className={`w-full py-3 px-6 flex items-center justify-center rounded-md ${
-                                    !selectedVariant || selectedVariant.stockQuantity === 0
+                                    !selectedVariant || selectedVariant.stockQuantity === 0 || product.status === "inactive" || product.status === "discontinued"
                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         : 'bg-blue-600 text-white hover:bg-blue-700'
                                 }`}
@@ -451,7 +457,11 @@ const ProductDetail = () => {
                                     ? 'Vui lòng chọn biến thể'
                                     : selectedVariant.stockQuantity === 0
                                         ? 'Hết hàng'
-                                        : 'Thêm vào giỏ hàng'
+                                        : product.status === "inactive"
+                                            ? 'Sản phẩm không hoạt động'
+                                            : product.status === "discontinued"
+                                                ? 'Sản phẩm ngừng kinh doanh' 
+                                                : 'Thêm vào giỏ hàng'
                                 }
                             </button>
                         </div>

@@ -11,6 +11,7 @@ const Header = () => {
     const { isAuthenticated, user } = useSelector((state) => state.auth);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
 
     // Kiểm tra xem người dùng có phải là admin không
@@ -22,6 +23,14 @@ const Header = () => {
         navigate('/');
     };
 
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (searchTerm.trim()) {
+            navigate(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
+            setSearchTerm('');
+        }
+    };
+
     return (
         <header className="bg-white shadow-md sticky top-0 z-10">
             <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -31,11 +40,13 @@ const Header = () => {
 
                 {/* Search bar - hidden on mobile */}
                 <div className="hidden md:flex flex-1 max-w-xl mx-4">
-                    <form className="flex w-full">
+                    <form className="flex w-full" onSubmit={handleSearch}>
                         <input
                             type="text"
                             placeholder="Tìm kiếm sản phẩm..."
                             className="w-full border rounded-l px-4 py-2 focus:outline-none"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                         <button
                             type="submit"
@@ -141,11 +152,13 @@ const Header = () => {
             {mobileMenuOpen && (
                 <div className="md:hidden bg-white border-t border-gray-200 py-2">
                     <div className="px-4 py-2">
-                        <form className="flex w-full">
+                        <form className="flex w-full" onSubmit={handleSearch}>
                             <input
                                 type="text"
                                 placeholder="Tìm kiếm sản phẩm..."
                                 className="w-full border rounded-l px-4 py-2 focus:outline-none"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                             />
                             <button
                                 type="submit"

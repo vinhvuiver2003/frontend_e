@@ -7,7 +7,7 @@ import { productService } from '../../services';
 // Lấy danh sách sản phẩm
 export const fetchProducts = createAsyncThunk(
     'products/fetchProducts',
-    async (params = {}, { rejectWithValue }) => {
+    async (params, { rejectWithValue }) => {
         try {
             const { 
                 page = 0, 
@@ -16,21 +16,47 @@ export const fetchProducts = createAsyncThunk(
                 sortDir = 'desc',
                 categoryId,
                 brandId,
+                keyword,
                 minPrice,
-                maxPrice 
-            } = params;
+                maxPrice
+            } = params || {};
             
-            // Xác định endpoint phù hợp dựa trên tham số đầu vào
             let response;
             
-            if (categoryId) {
-                response = await productService.getProductsByCategory(categoryId, page, size, sortBy, sortDir);
-            } else if (brandId) {
-                response = await productService.getProductsByBrand(brandId, page, size, sortBy, sortDir);
-            } else if (minPrice !== undefined && maxPrice !== undefined) {
-                response = await productService.filterProductsByPrice(minPrice, maxPrice, page, size, sortBy, sortDir);
-            } else {
-                response = await productService.getAllProducts(page, size, sortBy, sortDir);
+            // Nếu có từ khóa tìm kiếm, gọi API tìm kiếm
+            if (keyword) {
+                const searchResponse = await productService.searchProducts(
+                    keyword, page, size, sortBy, sortDir
+                );
+                response = searchResponse;
+            } 
+            // Nếu có danh mục, gọi API lọc theo danh mục
+            else if (categoryId) {
+                const categoryResponse = await productService.getProductsByCategory(
+                    categoryId, page, size, sortBy, sortDir
+                );
+                response = categoryResponse;
+            }
+            // Nếu có thương hiệu, gọi API lọc theo thương hiệu
+            else if (brandId) {
+                const brandResponse = await productService.getProductsByBrand(
+                    brandId, page, size, sortBy, sortDir
+                );
+                response = brandResponse;
+            }
+            // Nếu có khoảng giá, gọi API lọc theo giá
+            else if ((minPrice !== undefined && minPrice > 0) || (maxPrice !== undefined && maxPrice < 10000000)) {
+                const priceResponse = await productService.filterProductsByPrice(
+                    minPrice || 0, maxPrice || 10000000, page, size, sortBy, sortDir
+                );
+                response = priceResponse;
+            }
+            // Nếu không có điều kiện đặc biệt, lấy tất cả sản phẩm
+            else {
+                const allResponse = await productService.getAllProducts(
+                    page, size, sortBy, sortDir
+                );
+                response = allResponse;
             }
             
             console.log('API Response:', response);
@@ -43,7 +69,7 @@ export const fetchProducts = createAsyncThunk(
             return response.data.data;
         } catch (error) {
             console.error('Error fetching products:', error);
-            return rejectWithValue(error.response?.data || { message: error.message || 'Lỗi không xác định khi tải sản phẩm' });
+            return rejectWithValue(error.response?.data?.message || error.message);
         }
     }
 );
@@ -56,7 +82,7 @@ export const fetchProductById = createAsyncThunk(
             const response = await productService.getProductById(id);
             return response.data.data;
         } catch (error) {
-            return rejectWithValue(error.response?.data || error.message);
+            return rejectWithValue(error.response?.data?.message || error.message);
         }
     }
 );

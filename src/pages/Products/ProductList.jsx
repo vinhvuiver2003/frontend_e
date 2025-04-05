@@ -4,22 +4,56 @@ import { useSearchParams } from 'react-router-dom';
 import { fetchProducts } from '../../store/slices/productSlice';
 import ProductCard from '../../components/product/ProductCard';
 import { FilterIcon } from '@heroicons/react/solid';
+import categoryService from '../../services/categoryService';
+import brandService from '../../services/brandService';
 
 const ProductList = () => {
     const dispatch = useDispatch();
     const { products, loading, error, pagination } = useSelector(state => state.products);
     const [searchParams, setSearchParams] = useSearchParams();
     const [showFilter, setShowFilter] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [brands, setBrands] = useState([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
+    const [loadingBrands, setLoadingBrands] = useState(false);
 
     // Lấy tham số từ URL
     const category = searchParams.get('category') || '';
     const brand = searchParams.get('brand') || '';
+    const search = searchParams.get('search') || '';
     const page = parseInt(searchParams.get('page') || '0');
     const size = parseInt(searchParams.get('size') || '12');
     const minPrice = parseInt(searchParams.get('minPrice') || '0');
     const maxPrice = parseInt(searchParams.get('maxPrice') || '10000000');
     const sortBy = searchParams.get('sortBy') || 'id';
     const sortDir = searchParams.get('sortDir') || 'desc';
+
+    // Fetch danh mục và thương hiệu khi component mount
+    useEffect(() => {
+        const fetchCategoriesAndBrands = async () => {
+            setLoadingCategories(true);
+            setLoadingBrands(true);
+            try {
+                const categoriesResponse = await categoryService.getAllCategoriesNoPage();
+                setCategories(categoriesResponse.data || []);
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            } finally {
+                setLoadingCategories(false);
+            }
+
+            try {
+                const brandsResponse = await brandService.getAllBrandsNoPage();
+                setBrands(brandsResponse.data || []);
+            } catch (error) {
+                console.error('Error fetching brands:', error);
+            } finally {
+                setLoadingBrands(false);
+            }
+        };
+
+        fetchCategoriesAndBrands();
+    }, []);
 
     useEffect(() => {
         dispatch(fetchProducts({
@@ -29,10 +63,11 @@ const ProductList = () => {
             sortDir,
             ...(category && { categoryId: category }),
             ...(brand && { brandId: brand }),
+            ...(search && { keyword: search }),
             ...(minPrice > 0 && { minPrice }),
             ...(maxPrice > 0 && { maxPrice })
         }));
-    }, [dispatch, category, brand, page, size, minPrice, maxPrice, sortBy, sortDir]);
+    }, [dispatch, category, brand, search, page, size, minPrice, maxPrice, sortBy, sortDir]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -90,6 +125,31 @@ const ProductList = () => {
 
     return (
         <div className="container mx-auto px-4 py-8">
+            {/* Tìm kiếm hiện tại - Đã di chuyển ra ngoài flex container */}
+            {search && (
+                <div className="w-full mb-4 bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm">
+                            Kết quả tìm kiếm cho: <span className="font-semibold">"{search}"</span>
+                        </p>
+                        <button 
+                            onClick={() => {
+                                const newParams = {};
+                                for (const [key, value] of searchParams.entries()) {
+                                    if (key !== 'search') {
+                                        newParams[key] = value;
+                                    }
+                                }
+                                setSearchParams(newParams);
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                            Xóa tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col md:flex-row gap-6">
                 {/* Bộ lọc cho mobile */}
                 <div className="md:hidden mb-4">
@@ -112,13 +172,18 @@ const ProductList = () => {
                                     value={category}
                                     onChange={handleFilterChange}
                                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    disabled={loadingCategories}
                                 >
                                     <option value="">Tất cả danh mục</option>
-                                    <option value="1">Áo nam</option>
-                                    <option value="2">Quần nam</option>
-                                    <option value="3">Áo nữ</option>
-                                    <option value="4">Quần nữ</option>
-                                    <option value="5">Váy đầm</option>
+                                    {loadingCategories ? (
+                                        <option>Đang tải...</option>
+                                    ) : (
+                                        categories.map((cat) => (
+                                            <option key={cat.id} value={cat.id}>
+                                                {cat.name}
+                                            </option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
 
@@ -131,13 +196,18 @@ const ProductList = () => {
                                     value={brand}
                                     onChange={handleFilterChange}
                                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    disabled={loadingBrands}
                                 >
                                     <option value="">Tất cả thương hiệu</option>
-                                    <option value="1">Nike</option>
-                                    <option value="2">Adidas</option>
-                                    <option value="3">Zara</option>
-                                    <option value="4">H&M</option>
-                                    <option value="5">Uniqlo</option>
+                                    {loadingBrands ? (
+                                        <option>Đang tải...</option>
+                                    ) : (
+                                        brands.map((b) => (
+                                            <option key={b.id} value={b.id}>
+                                                {b.name}
+                                            </option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
 
@@ -197,13 +267,18 @@ const ProductList = () => {
                             value={category}
                             onChange={handleFilterChange}
                             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            disabled={loadingCategories}
                         >
                             <option value="">Tất cả danh mục</option>
-                            <option value="1">Áo nam</option>
-                            <option value="2">Quần nam</option>
-                            <option value="3">Áo nữ</option>
-                            <option value="4">Quần nữ</option>
-                            <option value="5">Váy đầm</option>
+                            {loadingCategories ? (
+                                <option>Đang tải...</option>
+                            ) : (
+                                categories.map((cat) => (
+                                    <option key={cat.id} value={cat.id}>
+                                        {cat.name}
+                                    </option>
+                                ))
+                            )}
                         </select>
                     </div>
 
@@ -214,13 +289,18 @@ const ProductList = () => {
                             value={brand}
                             onChange={handleFilterChange}
                             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            disabled={loadingBrands}
                         >
                             <option value="">Tất cả thương hiệu</option>
-                            <option value="1">Nike</option>
-                            <option value="2">Adidas</option>
-                            <option value="3">Zara</option>
-                            <option value="4">H&M</option>
-                            <option value="5">Uniqlo</option>
+                            {loadingBrands ? (
+                                <option>Đang tải...</option>
+                            ) : (
+                                brands.map((b) => (
+                                    <option key={b.id} value={b.id}>
+                                        {b.name}
+                                    </option>
+                                ))
+                            )}
                         </select>
                     </div>
 

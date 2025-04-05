@@ -76,7 +76,7 @@ const authService = {
      */
     changePassword: async (passwordData) => {
         const token = localStorage.getItem('token');
-        const response = await axios.put(`${API_URL}/users/password`, passwordData, {
+        const response = await axios.post(`${API_URL}/users/change-password`, passwordData, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -90,7 +90,7 @@ const authService = {
      * @returns {Promise<Object>} - Phản hồi từ server
      */
     forgotPassword: async (email) => {
-        const response = await axios.post(`${API_URL}/auth/forgot-password`, { email });
+        const response = await axios.post(`${API_URL}/auth/forgot-password?email=${email}`);
         return response;
     },
 
@@ -102,7 +102,12 @@ const authService = {
      * @returns {Promise<Object>} - Phản hồi từ server
      */
     resetPassword: async (resetData) => {
-        const response = await axios.post(`${API_URL}/auth/reset-password`, resetData);
+        const requestData = {
+            token: resetData.token,
+            newPassword: resetData.newPassword,
+            confirmPassword: resetData.newPassword // Gửi mật khẩu mới như là xác nhận mật khẩu
+        };
+        const response = await axios.post(`${API_URL}/auth/reset-password`, requestData);
         return response;
     },
 
