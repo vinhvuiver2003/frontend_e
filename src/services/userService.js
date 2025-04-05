@@ -17,6 +17,14 @@ export const getAllUsers = async (page = 0, size = 10, sortBy = 'id', sortDir = 
   });
 };
 
+// Đếm số lượng admin
+export const countAdmins = async () => {
+  const response = await api.get('/users', {
+    params: { role: 'ADMIN', size: 1 } // Chỉ cần lấy 1 bản ghi để xem totalElements
+  });
+  return response.data.data.totalElements;
+};
+
 // Cập nhật thông tin người dùng
 export const updateUser = async (id, userData) => {
   return api.put(`/users/${id}`, userData);
@@ -69,7 +77,10 @@ export const resetPassword = async (id) => {
 
 // Tạo mới người dùng (ADMIN)
 export const createUser = async (userData) => {
-  return api.post('/users', userData);
+  return api.post('/auth/register', {
+    ...userData,
+    confirmPassword: userData.password // API yêu cầu confirmPassword
+  });
 };
 
 const userService = {
@@ -86,7 +97,8 @@ const userService = {
   getUsersByRole,
   toggleUserStatus,
   resetPassword,
-  createUser
+  createUser,
+  countAdmins
 };
 
 export default userService; 

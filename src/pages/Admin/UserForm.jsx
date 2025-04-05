@@ -102,8 +102,12 @@ const UserForm = () => {
                 navigate('/admin/users');
             } else {
                 // Thêm mới người dùng
-                await userService.createUser(formData);
-                navigate('/admin/users');
+                const response = await userService.createUser(formData);
+                if (response.data.success) {
+                    navigate('/admin/users');
+                } else {
+                    setSubmitError(response.data.message || 'Có lỗi xảy ra khi tạo người dùng');
+                }
             }
         } catch (error) {
             setSubmitError(error.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.');

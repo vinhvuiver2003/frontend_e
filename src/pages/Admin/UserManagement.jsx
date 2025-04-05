@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/outline';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import userService from '../../services/userService';
 
 const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
     if (!isOpen) return null;
@@ -75,7 +76,22 @@ const UserManagement = () => {
         }));
     }, [dispatch, currentPage, sortBy, sortDir, searchTerm, roleFilter]);
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id, isAdmin) => {
+        if (isAdmin) {
+            // Kiểm tra số lượng admin trước khi xóa
+            try {
+                const adminCount = await userService.countAdmins();
+                if (adminCount <= 1) {
+                    alert('Không thể xóa admin cuối cùng của hệ thống!');
+                    return;
+                }
+            } catch (error) {
+                console.error('Error counting admins:', error);
+                alert('Không thể kiểm tra số lượng admin. Vui lòng thử lại sau.');
+                return;
+            }
+        }
+
         setConfirmModal({
             isOpen: true,
             title: 'Xác nhận xóa',
@@ -278,10 +294,9 @@ const UserManagement = () => {
                                                     <PencilAltIcon className="h-5 w-5" />
                                                 </Link>
                                                 <button
-                                                    onClick={() => handleDelete(user.id)}
+                                                    onClick={() => handleDelete(user.id, user.role === 'ADMIN')}
                                                     className="text-red-600 hover:text-red-900"
                                                     title="Xóa người dùng"
-                                                    disabled={user.role === 'ADMIN'}
                                                 >
                                                     <TrashIcon className="h-5 w-5" />
                                                 </button>
