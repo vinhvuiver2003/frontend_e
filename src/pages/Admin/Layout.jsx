@@ -8,11 +8,10 @@ import {
   ShoppingBagIcon, 
   UserGroupIcon, 
   ViewListIcon, 
-  ChartBarIcon, 
-  CogIcon, 
   LogoutIcon,
   TagIcon,
-  ArchiveIcon 
+  ArchiveIcon,
+  TicketIcon
 } from '@heroicons/react/outline';
 
 const AdminLayout = () => {
@@ -121,6 +120,20 @@ const AdminLayout = () => {
               </NavLink>
 
               <NavLink
+                to="/admin/promotions"
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`
+                }
+              >
+                <TicketIcon className="h-5 w-5 mr-3" />
+                Khuyến mãi
+              </NavLink>
+
+              <NavLink
                 to="/admin/orders"
                 className={({ isActive }) =>
                   `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
@@ -146,34 +159,6 @@ const AdminLayout = () => {
               >
                 <UserGroupIcon className="h-5 w-5 mr-3" />
                 Quản lý người dùng
-              </NavLink>
-
-              <NavLink
-                to="/admin/statistics"
-                className={({ isActive }) =>
-                  `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`
-                }
-              >
-                <ChartBarIcon className="h-5 w-5 mr-3" />
-                Thống kê
-              </NavLink>
-
-              <NavLink
-                to="/admin/settings"
-                className={({ isActive }) =>
-                  `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`
-                }
-              >
-                <CogIcon className="h-5 w-5 mr-3" />
-                Cài đặt
               </NavLink>
 
               <hr className="my-4 border-gray-200" />
@@ -238,6 +223,51 @@ const AdminLayout = () => {
           </NavLink>
 
           <NavLink
+            to="/admin/categories"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                isActive
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`
+            }
+            onClick={() => document.getElementById('mobile-menu').classList.add('hidden')}
+          >
+            <TagIcon className="h-5 w-5 mr-3" />
+            Danh mục
+          </NavLink>
+
+          <NavLink
+            to="/admin/brands"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                isActive
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`
+            }
+            onClick={() => document.getElementById('mobile-menu').classList.add('hidden')}
+          >
+            <ArchiveIcon className="h-5 w-5 mr-3" />
+            Thương hiệu
+          </NavLink>
+
+          <NavLink
+            to="/admin/promotions"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                isActive
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`
+            }
+            onClick={() => document.getElementById('mobile-menu').classList.add('hidden')}
+          >
+            <TicketIcon className="h-5 w-5 mr-3" />
+            Khuyến mãi
+          </NavLink>
+
+          <NavLink
             to="/admin/orders"
             className={({ isActive }) =>
               `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
@@ -267,10 +297,12 @@ const AdminLayout = () => {
             Quản lý người dùng
           </NavLink>
 
+          <hr className="my-2 border-gray-200" />
+          
           <button
             onClick={() => {
-              document.getElementById('mobile-menu').classList.add('hidden');
               handleLogout();
+              document.getElementById('mobile-menu').classList.add('hidden');
             }}
             className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50"
           >
@@ -282,7 +314,7 @@ const AdminLayout = () => {
 
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-4 bg-gray-100">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

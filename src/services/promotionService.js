@@ -42,8 +42,64 @@ const getPromotionByCode = async (code) => {
 };
 
 const promotionService = {
+  // Lấy danh sách khuyến mãi với phân trang, tìm kiếm và sắp xếp
+  getAllPromotions: async (params = {}) => {
+    const { page = 0, size = 10, sortBy = 'id', sortDir = 'asc', search = '' } = params;
+    const response = await api.get('/promotions', {
+      params: {
+        page,
+        size,
+        sortBy,
+        sortDir,
+        search
+      }
+    });
+    return response.data;
+  },
+
+  // Lấy thông tin chi tiết một khuyến mãi
+  getPromotionById: async (id) => {
+    const response = await api.get(`/promotions/${id}`);
+    return response.data;
+  },
+
+  // Tạo khuyến mãi mới
+  createPromotion: async (promotionData) => {
+    const response = await api.post('/promotions', promotionData);
+    return response.data;
+  },
+
+  // Cập nhật thông tin khuyến mãi
+  updatePromotion: async (id, promotionData) => {
+    const response = await api.put(`/promotions/${id}`, promotionData);
+    return response.data;
+  },
+
+  // Xóa khuyến mãi
+  deletePromotion: async (id) => {
+    const response = await api.delete(`/promotions/${id}`);
+    return response.data;
+  },
+
+  // Lấy các khuyến mãi có hiệu lực
+  getActivePromotions: async () => {
+    const response = await api.get('/promotions/active');
+    return response.data;
+  },
+
+  // Kiểm tra mã khuyến mãi có hợp lệ không
+  validatePromoCode: async (code, cartTotal) => {
+    const response = await api.post('/promotions/validate', { code, cartTotal });
+    return response.data;
+  },
+
+  // Áp dụng khuyến mãi cho đơn hàng
+  applyPromotion: async (orderId, promoCode) => {
+    const response = await api.post(`/orders/${orderId}/apply-promotion`, { promoCode });
+    return response.data;
+  },
+
   validatePromotion,
-  getActivePromotions,
   getPromotionByCode
 };
 

@@ -6,9 +6,14 @@ import {
   ShoppingBagIcon, 
   UserGroupIcon, 
   CashIcon, 
-  TrendingUpIcon, 
   ClipboardCheckIcon 
 } from '@heroicons/react/outline';
+import dashboardService from '../../services/dashboardService';
+import SalesChart from '../../components/admin/SalesChart';
+import OrderStatusChart from '../../components/admin/OrderStatusChart';
+import TopSellingProducts from '../../components/admin/TopSellingProducts';
+import LowStockProducts from '../../components/admin/LowStockProducts';
+import CategorySalesChart from '../../components/admin/CategorySalesChart';
 
 const StatCard = ({ title, value, icon, color, linkTo }) => {
   return (
@@ -31,28 +36,40 @@ const StatCard = ({ title, value, icon, color, linkTo }) => {
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const { allOrders, loading } = useSelector(state => state.orders);
+  const { allOrders, loading: ordersLoading } = useSelector(state => state.orders);
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
     totalUsers: 0,
-    pendingOrders: 0,
-    revenue: 0
+    totalSales: 0
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Tải dữ liệu đơn hàng
     dispatch(fetchAllOrders({ page: 0, size: 5 }));
-
-    // Trong thực tế, nên có API riêng để lấy thống kê tổng quan
-    // Đây là dữ liệu giả để hiển thị
-    setStats({
-      totalProducts: 234,
-      totalOrders: allOrders?.pagination?.totalElements || 0,
-      totalUsers: 578,
-      pendingOrders: 32,
-      revenue: 45678000
-    });
+    
+    // Tải thống kê tổng quan từ API
+    const fetchDashboardStats = async () => {
+      try {
+        setLoading(true);
+        const dashboardStats = await dashboardService.getDashboardStats();
+        setStats({
+          totalProducts: dashboardStats.totalProducts || 0,
+          totalOrders: dashboardStats.totalOrders || 0,
+          totalUsers: dashboardStats.totalUsers || 0,
+          totalSales: dashboardStats.totalSales || 0
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        setError('Không thể tải dữ liệu thống kê. Vui lòng thử lại sau.');
+        setLoading(false);
+      }
+    };
+    
+    fetchDashboardStats();
   }, [dispatch]);
 
   // Format giá tiền
@@ -60,6 +77,22 @@ const Dashboard = () => {
     if (price === undefined || price === null) return '0';
     return price.toLocaleString('vi-VN') + '₫';
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 p-4 rounded-md text-red-800 text-center">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -98,113 +131,111 @@ const Dashboard = () => {
         
         <StatCard 
           title="Doanh thu" 
-          value={formatPrice(stats.revenue)} 
+          value={formatPrice(stats.totalSales)} 
           icon={<CashIcon className="h-6 w-6 text-white" />}
           color="bg-red-500"
-          linkTo="/admin/statistics"
+          linkTo="/admin/orders"
         />
       </div>
 
-      {/* Đơn hàng mới nhất */}
-      <div className="bg-white rounded-lg shadow-sm mb-8">
-        <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="text-lg font-medium">Đơn hàng mới nhất</h2>
-          <Link to="/admin/orders" className="text-sm text-blue-600 hover:text-blue-800">
-            Xem tất cả
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mã đơn hàng
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Khách hàng
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày đặt
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tổng tiền
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center">
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-                    </div>
-                  </td>
-                </tr>
-              ) : allOrders && allOrders.content && allOrders.content.length > 0 ? (
-                allOrders.content.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link to={`/admin/orders/${order.id}`} className="text-blue-600 hover:text-blue-900">
-                        #{order.id}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {order.user ? `${order.user.firstName} ${order.user.lastName}` : order.receiverName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${order.orderStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                          order.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
-                          order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                        {order.orderStatus === 'pending' ? 'Chờ xác nhận' :
-                         order.orderStatus === 'confirmed' ? 'Đã xác nhận' :
-                         order.orderStatus === 'processed' ? 'Đang xử lý' :
-                         order.orderStatus === 'shipped' ? 'Đang giao hàng' :
-                         order.orderStatus === 'delivered' ? 'Đã giao hàng' :
-                         order.orderStatus === 'cancelled' ? 'Đã hủy' : 'Không xác định'
-                        }
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.createdAt).toLocaleDateString('vi-VN')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {formatPrice(order.finalAmount)}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                    Không có đơn hàng nào
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Biểu đồ thống kê */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <SalesChart />
+        <OrderStatusChart />
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <CategorySalesChart />
+        <TopSellingProducts />
       </div>
 
-      {/* Biểu đồ & thông tin khác */}
+      {/* Đơn hàng mới nhất & Sản phẩm sắp hết hàng */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-sm h-64 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <TrendingUpIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-            <p>Biểu đồ doanh thu sẽ được hiển thị ở đây</p>
+        <div className="bg-white rounded-lg shadow-sm">
+          <div className="px-6 py-4 border-b flex justify-between items-center">
+            <h2 className="text-lg font-medium">Đơn hàng mới nhất</h2>
+            <Link to="/admin/orders" className="text-sm text-blue-600 hover:text-blue-800">
+              Xem tất cả
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mã đơn hàng
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Khách hàng
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trạng thái
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ngày đặt
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tổng tiền
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {ordersLoading ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center">
+                      <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : allOrders && allOrders.content && allOrders.content.length > 0 ? (
+                  allOrders.content.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link to={`/admin/orders/${order.id}`} className="text-blue-600 hover:text-blue-900">
+                          #{order.id}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {order.user ? `${order.user.firstName} ${order.user.lastName}` : order.receiverName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                          ${order.orderStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                            order.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                            order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                          {order.orderStatus === 'pending' ? 'Chờ xác nhận' :
+                           order.orderStatus === 'confirmed' ? 'Đã xác nhận' :
+                           order.orderStatus === 'processed' ? 'Đang xử lý' :
+                           order.orderStatus === 'shipped' ? 'Đang giao hàng' :
+                           order.orderStatus === 'delivered' ? 'Đã giao hàng' :
+                           order.orderStatus === 'cancelled' ? 'Đã hủy' : 'Không xác định'
+                          }
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                        {formatPrice(order.finalAmount)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                      Không có đơn hàng nào
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm h-64 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <TrendingUpIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-            <p>Biểu đồ đơn hàng sẽ được hiển thị ở đây</p>
-          </div>
-        </div>
+        <LowStockProducts />
       </div>
     </div>
   );

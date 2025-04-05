@@ -29,6 +29,8 @@ import Footer from './components/layout/Footer';
 import PrivateRoute from './components/routes/PrivateRoute';
 import AdminRoute from './components/routes/AdminRoute';
 import AuthErrorAlert from './components/common/AuthErrorAlert';
+import PromotionManagement from './pages/Admin/PromotionManagement';
+import PromotionForm from './pages/Admin/PromotionForm';
 
 function App() {
     const { isAuthenticated } = useSelector(state => state.auth);
@@ -85,16 +87,18 @@ function App() {
                             <Route path="/admin" element={<AdminLayout />}>
                                 <Route index element={<Dashboard />} />
                                 <Route path="products" element={<ProductsManagement />} />
-                                <Route path="products/create" element={<ProductForm />} />
+                                <Route path="products/new" element={<ProductForm />} />
                                 <Route path="products/:id/edit" element={<ProductForm />} />
+                                <Route path="categories" element={<CategoriesManagement />} />
+                                <Route path="brands" element={<BrandsManagement />} />
+                                <Route path="promotions" element={<PromotionManagement />} />
+                                <Route path="promotions/new" element={<PromotionForm />} />
+                                <Route path="promotions/:id/edit" element={<PromotionForm />} />
                                 <Route path="orders" element={<OrdersManagement />} />
                                 <Route path="orders/:id" element={<AdminOrderDetail />} />
                                 <Route path="users" element={<UserManagement />} />
-                                <Route path="users/add" element={<UserForm />} />
+                                <Route path="users/new" element={<UserForm />} />
                                 <Route path="users/:id/edit" element={<UserForm />} />
-                                <Route path="categories" element={<CategoriesManagement />} />
-                                <Route path="brands" element={<BrandsManagement />} />
-                                {/* Các route admin khác sẽ được thêm sau */}
                             </Route>
                         </Route>
 
