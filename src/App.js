@@ -20,9 +20,10 @@ import ProductsManagement from './pages/Admin/ProductsManagement';
 import ProductForm from './pages/Admin/ProductForm';
 import OrdersManagement from './pages/Admin/OrdersManagement';
 import AdminOrderDetail from './pages/Admin/OrderDetail';
-import UsersManagement from './pages/Admin/UsersManagement';
+import UserManagement from './pages/Admin/UserManagement';
 import CategoriesManagement from './pages/Admin/CategoriesManagement';
 import BrandsManagement from './pages/Admin/BrandsManagement';
+import UserForm from './pages/Admin/UserForm';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import PrivateRoute from './components/routes/PrivateRoute';
@@ -88,7 +89,9 @@ function App() {
                                 <Route path="products/:id/edit" element={<ProductForm />} />
                                 <Route path="orders" element={<OrdersManagement />} />
                                 <Route path="orders/:id" element={<AdminOrderDetail />} />
-                                <Route path="users" element={<UsersManagement />} />
+                                <Route path="users" element={<UserManagement />} />
+                                <Route path="users/add" element={<UserForm />} />
+                                <Route path="users/:id/edit" element={<UserForm />} />
                                 <Route path="categories" element={<CategoriesManagement />} />
                                 <Route path="brands" element={<BrandsManagement />} />
                                 {/* Các route admin khác sẽ được thêm sau */}

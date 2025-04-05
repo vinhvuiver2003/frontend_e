@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import authService from '../../services/authService';
 
 /**
  * Component AdminRoute bảo vệ các route chỉ dành cho admin
@@ -11,7 +12,7 @@ const AdminRoute = () => {
   const location = useLocation();
 
   // Kiểm tra xem người dùng có phải là admin không
-  const isAdmin = checkUserIsAdmin(user);
+  const isAdmin = authService.isAdmin(user);
 
   // Nếu đang tải thông tin người dùng, hiển thị loading
   if (loading) {
