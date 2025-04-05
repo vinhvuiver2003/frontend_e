@@ -80,17 +80,6 @@ const LowStockProducts = () => {
                 <tr key={product.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center">
-                      {product.images && product.images[0] ? (
-                        <img 
-                          src={product.images[0].url} 
-                          alt={product.name}
-                          className="h-10 w-10 rounded-md object-cover mr-3" 
-                        />
-                      ) : (
-                        <div className="h-10 w-10 rounded-md bg-gray-200 mr-3 flex items-center justify-center text-gray-500">
-                          No img
-                        </div>
-                      )}
                       <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={product.name}>
                         {product.name}
                       </div>
