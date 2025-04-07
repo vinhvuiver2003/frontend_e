@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
-import { fetchProducts } from '../../store/slices/productSlice';
+import { fetchProducts, getProductsByCategoryAndBrand } from '../../store/slices/productSlice';
 import ProductCard from '../../components/product/ProductCard';
 import { FilterIcon } from '@heroicons/react/solid';
 import categoryService from '../../services/categoryService';
@@ -56,17 +56,28 @@ const ProductList = () => {
     }, []);
 
     useEffect(() => {
-        dispatch(fetchProducts({
-            page,
-            size,
-            sortBy,
-            sortDir,
-            ...(category && { categoryId: category }),
-            ...(brand && { brandId: brand }),
-            ...(search && { keyword: search }),
-            ...(minPrice > 0 && { minPrice }),
-            ...(maxPrice > 0 && { maxPrice })
-        }));
+        if (category && brand) {
+            dispatch(getProductsByCategoryAndBrand({
+                categoryId: category,
+                brandId: brand,
+                page,
+                size,
+                sortBy,
+                sortDir
+            }));
+        } else {
+            dispatch(fetchProducts({
+                page,
+                size,
+                sortBy,
+                sortDir,
+                ...(category && { categoryId: category }),
+                ...(brand && { brandId: brand }),
+                ...(search && { keyword: search }),
+                ...(minPrice > 0 && { minPrice }),
+                ...(maxPrice > 0 && { maxPrice })
+            }));
+        }
     }, [dispatch, category, brand, search, page, size, minPrice, maxPrice, sortBy, sortDir]);
 
     const handleFilterChange = (e) => {

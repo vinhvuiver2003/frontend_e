@@ -204,6 +204,26 @@ export const deleteProduct = createAsyncThunk(
     }
 );
 
+export const getProductsByCategoryAndBrand = createAsyncThunk(
+    'products/getByCategoryAndBrand',
+    async ({ categoryId, brandId, page, size, sortBy, sortDir }, { rejectWithValue }) => {
+        try {
+            const response = await productService.getProductsByCategoryAndBrand(
+                categoryId, brandId, page, size, sortBy, sortDir
+            );
+            // Kiểm tra cấu trúc response và trả về dữ liệu phù hợp
+            if (response.data && response.data.data) {
+                return response.data.data;
+            } else if (response.data) {
+                return response.data;
+            }
+            return response;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
 const initialState = {
     products: [],
     newArrivals: [],
@@ -429,6 +449,29 @@ const productSlice = createSlice({
             .addCase(deleteProduct.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload?.message || 'Không thể xóa sản phẩm';
+            })
+
+            // Xử lý getProductsByCategoryAndBrand
+            .addCase(getProductsByCategoryAndBrand.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(getProductsByCategoryAndBrand.fulfilled, (state, action) => {
+                state.loading = false;
+                // Kiểm tra cấu trúc dữ liệu trả về
+                const data = action.payload;
+                state.products = data.content || data.products || [];
+                state.pagination = {
+                    totalElements: data.totalElements || 0,
+                    totalPages: data.totalPages || 0,
+                    page: data.page || 0,
+                    size: data.size || 12,
+                    last: data.last || true
+                };
+            })
+            .addCase(getProductsByCategoryAndBrand.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
     }
 });

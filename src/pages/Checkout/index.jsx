@@ -36,7 +36,6 @@ const Checkout = () => {
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
 
-    // Điều hướng người dùng về trang đăng nhập nếu chưa đăng nhập
     useEffect(() => {
         if (!isAuthenticated) {
             navigate('/login', { state: { from: '/checkout' } });

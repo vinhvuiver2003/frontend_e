@@ -60,6 +60,13 @@ export const deleteProduct = async (id) => {
   return await api.delete(`/products/${id}`);
 };
 
+const getProductsByCategoryAndBrand = async (categoryId, brandId, page = 0, size = 10, sortBy = 'createdAt', sortDir = 'desc') => {
+    const response = await api.get(`/products/category/${categoryId}/brand/${brandId}`, {
+        params: { page, size, sortBy, sortDir }
+    });
+    return response.data;
+};
+
 const productService = {
   getAllProducts,
   getProductById,
@@ -72,7 +79,8 @@ const productService = {
   getLowStockProducts,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  getProductsByCategoryAndBrand
 };
 
 export default productService; 
