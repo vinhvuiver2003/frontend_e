@@ -10,6 +10,7 @@ import {
     removePromotion
 } from '../../store/slices/cartSlice';
 import { TrashIcon, XIcon } from '@heroicons/react/outline';
+import { toast } from 'react-toastify';
 
 // Hàm tiện ích để format giá
 const formatPrice = (price) => {
@@ -31,7 +32,8 @@ const Cart = () => {
         loading, 
         error,
         promotion, 
-        discountAmount 
+        discountAmount,
+        invalidPromotion
     } = useSelector(state => state.cart);
     
     const { isAuthenticated } = useSelector(state => state.auth);
@@ -71,13 +73,23 @@ const Cart = () => {
 
     const handleApplyPromoCode = () => {
         if (promoCode.trim()) {
-            dispatch(applyPromotionAsync(promoCode.trim()));
+            dispatch(applyPromotionAsync(promoCode.trim()))
+                .unwrap()
+                .then((result) => {
+                    // Mã thành công
+                    toast.success('Áp dụng mã giảm giá thành công!');
+                })
+                .catch((error) => {
+                    // Mã thất bại, thông báo đã được hiển thị từ Redux state
+                    toast.error(error?.message || 'Mã giảm giá không hợp lệ');
+                });
         }
     };
 
     const handleRemovePromoCode = () => {
         dispatch(removePromotion());
         setPromoCode('');
+        toast.info('Đã hủy mã giảm giá');
     };
 
     if (loading) {
@@ -265,6 +277,17 @@ const Cart = () => {
                                 <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
                                     <p className="text-green-700 font-medium">{promotion.name}</p>
                                     <p className="text-green-600">{promotion.description}</p>
+                                </div>
+                            )}
+                            {!promotion && invalidPromotion && (
+                                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm">
+                                    <p className="text-red-700 text-xs">{error}</p>
+                                    <p className="text-red-600 text-xs mt-1">
+                                        Bạn cần mua thêm {((invalidPromotion.minimumOrder || 0) - totalAmount).toLocaleString()}đ để đủ điều kiện áp dụng.
+                                        <Link to="/products" className="ml-1 text-blue-500 underline">
+                                            Tiếp tục mua sắm
+                                        </Link>
+                                    </p>
                                 </div>
                             )}
                         </div>

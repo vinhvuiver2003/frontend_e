@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
-import { SearchIcon, ShoppingCartIcon, UserIcon, MenuIcon, ChevronDownIcon, HeartIcon } from '@heroicons/react/outline';
+import { SearchIcon, ShoppingCartIcon, UserIcon, MenuIcon, ChevronDownIcon } from '@heroicons/react/outline';
 import authService from '../../services/authService';
 import categoryService from '../../services/categoryService';
 
@@ -85,10 +85,7 @@ const Header = () => {
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center space-x-4">
-                        <Link to="/wishlist" className="hover:text-blue-500 relative flex items-center">
-                            <HeartIcon className="w-5 h-5" />
-                            <span className="text-sm ml-1">Yêu thích</span>
-                        </Link>
+
                         
                         <Link to="/cart" className="hover:text-blue-500 relative flex items-center">
                             <ShoppingCartIcon className="w-5 h-5" />
@@ -223,14 +220,12 @@ const Header = () => {
                         <Link to="/products" className="mr-6 text-gray-700 hover:text-blue-500">
                             Sản phẩm
                         </Link>
-                        <Link to="/products?sortBy=createdAt-desc" className="mr-6 text-gray-700 hover:text-blue-500">
-                            Mới nhất
-                        </Link>
-                        <Link to="/products?sortBy=discount-desc" className="mr-6 text-gray-700 hover:text-blue-500">
-                            Khuyến mãi
-                        </Link>
+
                         <Link to="/size-guide" className="mr-6 text-gray-700 hover:text-blue-500">
                             Hướng dẫn chọn size
+                        </Link>
+                        <Link to="/shipping-policy" className="mr-6 text-gray-700 hover:text-blue-500">
+                            Chính sách vận chuyển
                         </Link>
                     </nav>
                 </div>
@@ -256,98 +251,103 @@ const Header = () => {
                             </button>
                         </form>
                     </div>
-
-                    <div className="border-t border-gray-200 pt-2">
-                        <h4 className="px-4 py-2 font-medium text-gray-900">Danh mục</h4>
-                        {categories.map(category => (
-                            <Link
-                                key={category.id}
-                                to={`/products?category=${category.id}`}
-                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                {category.name}
-                            </Link>
-                        ))}
+                    <div className="px-4 py-2 space-y-2">
                         <Link
                             to="/products"
-                            className="block px-4 py-2 font-medium text-blue-600 hover:bg-gray-100"
+                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
                             onClick={() => setMobileMenuOpen(false)}
                         >
-                            Xem tất cả sản phẩm
+                            Sản phẩm
                         </Link>
-                    </div>
-
-                    <div className="border-t border-gray-200 pt-2">
                         <Link
-                            to="/wishlist"
-                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                            to="/products/new-arrivals?limit=10"
+                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
                             onClick={() => setMobileMenuOpen(false)}
                         >
-                            Danh sách yêu thích
+                            Mới nhất
+                        </Link>
+                        <Link
+                            to="/products?sortBy=discount-desc"
+                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            Khuyến mãi
                         </Link>
                         <Link
                             to="/size-guide"
-                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             Hướng dẫn chọn size
                         </Link>
+                        <Link
+                            to="/shipping-policy"
+                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                            onClick={() => setMobileMenuOpen(false)}
+                        >
+                            Chính sách vận chuyển
+                        </Link>
+                        {isAuthenticated ? (
+                            <>
+                                <Link
+                                    to="/account/profile"
+                                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Thông tin tài khoản
+                                </Link>
+                                <Link
+                                    to="/account/orders"
+                                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Đơn hàng của tôi
+                                </Link>
+                                <Link
+                                    to="/account/change-password"
+                                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Đổi mật khẩu
+                                </Link>
+                                {isAdmin && (
+                                    <Link
+                                        to="/admin"
+                                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        Quản lý
+                                    </Link>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        handleLogout();
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                >
+                                    Đăng xuất
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/login"
+                                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Đăng nhập
+                                </Link>
+                                <Link
+                                    to="/register"
+                                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Đăng ký
+                                </Link>
+                            </>
+                        )}
                     </div>
-
-                    {isAuthenticated ? (
-                        <div className="border-t border-gray-200 pt-2">
-                            <h4 className="px-4 py-2 font-medium text-gray-900">Tài khoản</h4>
-                            <Link
-                                to="/account/profile"
-                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Thông tin tài khoản
-                            </Link>
-                            <Link
-                                to="/account/orders"
-                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Đơn hàng của tôi
-                            </Link>
-                            <Link
-                                to="/account/change-password"
-                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Đổi mật khẩu
-                            </Link>
-                            <button
-                                onClick={() => {
-                                    handleLogout();
-                                    setMobileMenuOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
-                            >
-                                Đăng xuất
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="border-t border-gray-200 pt-2 px-4 py-2 space-y-2">
-                            <Link
-                                to="/login"
-                                className="flex items-center justify-center px-4 py-2 rounded border hover:bg-gray-50"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                <UserIcon className="w-5 h-5 mr-2" />
-                                Đăng nhập
-                            </Link>
-                            <Link
-                                to="/register"
-                                className="flex items-center justify-center px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Đăng ký
-                            </Link>
-                        </div>
-                    )}
                 </div>
             )}
         </header>

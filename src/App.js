@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCart, mergeCartsAsync } from './store/slices/cartSlice';
@@ -35,6 +35,9 @@ import AdminRoute from './components/routes/AdminRoute';
 import AuthErrorAlert from './components/common/AuthErrorAlert';
 import PromotionManagement from './pages/Admin/PromotionManagement';
 import PromotionForm from './pages/Admin/PromotionForm';
+import SizeGuide from './pages/SizeGuide/SizeGuide';
+import ShippingPolicy from './pages/ShippingPolicy/ShippingPolicy';
+import ChatBox from './components/chat/ChatBox';
 
 function App() {
     const { isAuthenticated } = useSelector(state => state.auth);
@@ -57,6 +60,28 @@ function App() {
         }
     }, [dispatch, isAuthenticated]);
 
+    // Sử dụng useEffect để kiểm soát hiển thị của ChatBox
+    const [showChatBox, setShowChatBox] = useState(true);
+    
+    useEffect(() => {
+        // Hàm này sẽ kiểm tra xem có đang ở trang admin hay không
+        const checkAdminRoute = () => {
+            const isAdminRoute = window.location.pathname.includes('/admin');
+            setShowChatBox(!isAdminRoute);
+        };
+        
+        // Kiểm tra ban đầu
+        checkAdminRoute();
+        
+        // Đăng ký theo dõi thay đổi đường dẫn
+        window.addEventListener('popstate', checkAdminRoute);
+        
+        // Hủy đăng ký khi component unmount
+        return () => {
+            window.removeEventListener('popstate', checkAdminRoute);
+        };
+    }, []);
+
     return (
         <Router>
             <div className="App flex flex-col min-h-screen">
@@ -74,6 +99,8 @@ function App() {
                         <Route path="/products" element={<ProductList />} />
                         <Route path="/products/:id" element={<ProductDetail />} />
                         <Route path="/cart" element={<Cart />} />
+                        <Route path="/size-guide" element={<SizeGuide />} />
+                        <Route path="/shipping-policy" element={<ShippingPolicy />} />
                         
                         {/* Protected Routes - Cần đăng nhập */}
                         <Route element={<PrivateRoute />}>
@@ -123,6 +150,7 @@ function App() {
                     </Routes>
                 </main>
                 <Footer />
+                {showChatBox && <ChatBox />}
             </div>
         </Router>
     );

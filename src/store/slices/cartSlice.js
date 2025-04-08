@@ -163,10 +163,25 @@ export const mergeCartsAsync = createAsyncThunk(
 // Thêm action async để áp dụng mã giảm giá
 export const applyPromotionAsync = createAsyncThunk(
   'cart/applyPromotionAsync',
-  async (code, { rejectWithValue }) => {
+  async (code, { rejectWithValue, getState }) => {
     try {
+      const { cart } = getState();
+      const totalAmount = cart.totalAmount;
+
+      // Lấy thông tin mã giảm giá từ server
       const response = await promotionService.validatePromotion(code);
-      return response.data;
+      const promotion = response.data;
+
+      // Kiểm tra điều kiện giá trị đơn hàng tối thiểu
+      if (promotion.minimumOrder && totalAmount < promotion.minimumOrder) {
+        return rejectWithValue({
+          message: `Đơn hàng của bạn cần đạt giá trị tối thiểu ${promotion.minimumOrder.toLocaleString()}đ để sử dụng mã này!`,
+          promotion: promotion,
+          currentTotal: totalAmount
+        });
+      }
+
+      return promotion;
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: error.message });
     }
@@ -181,7 +196,8 @@ const initialState = {
   loading: false,
   error: null,
   promotion: null,
-  discountAmount: 0
+  discountAmount: 0,
+  invalidPromotion: null
 };
 
 export const cartSlice = createSlice({
@@ -200,6 +216,7 @@ export const cartSlice = createSlice({
       state.error = null;
       state.promotion = null;
       state.discountAmount = 0;
+      state.invalidPromotion = null;
     },
     removePromotion: (state) => {
       state.promotion = null;
@@ -345,6 +362,7 @@ export const cartSlice = createSlice({
       .addCase(applyPromotionAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || 'Mã giảm giá không hợp lệ';
+        state.invalidPromotion = action.payload?.promotion || null;
         state.promotion = null;
         state.discountAmount = 0;
       });
