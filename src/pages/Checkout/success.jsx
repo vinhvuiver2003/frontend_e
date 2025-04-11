@@ -37,8 +37,8 @@ const OrderSuccess = () => {
                 return 'Thanh toán khi nhận hàng (COD)';
             case 'bank':
                 return 'Chuyển khoản ngân hàng';
-            case 'sepay':
-                return 'Thanh toán qua SEPAY';
+            case 'vnpay':
+                return 'Thanh toán qua VNPAY';
             default:
                 return 'Thanh toán qua SEPAY';
         }
@@ -87,13 +87,13 @@ const OrderSuccess = () => {
                             </div>
                             <p className="text-gray-700">{getPaymentMethodText(orderInfo.paymentMethod)}</p>
                             
-                            {orderInfo.paymentMethod === 'sepay' && (
+                            {orderInfo.paymentMethod === 'vnpay' && (
                                 <div className="mb-4">
                                     <h3 className="text-lg font-medium mb-2">Thông tin thanh toán</h3>
                                     <div className="flex items-center justify-between bg-gray-50 p-4 rounded-md">
-                                        <p className="text-sm text-gray-600">Phương thức: SEPAY</p>
+                                        <p className="text-sm text-gray-600">Phương thức: VNPAY</p>
                                         <div className="flex items-center">
-                                            <img src="/images/sepay-logo.png" alt="SEPAY" className="h-8" onError={(e) => e.target.style.display = 'none'} />
+                                            <img src="/images/vnpay-logo.png" alt="VNPAY" className="h-8" onError={(e) => e.target.style.display = 'none'} />
                                         </div>
                                     </div>
                                 </div>

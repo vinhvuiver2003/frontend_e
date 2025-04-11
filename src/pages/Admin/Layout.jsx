@@ -11,7 +11,8 @@ import {
   LogoutIcon,
   TagIcon,
   ArchiveIcon,
-  TicketIcon
+  TicketIcon,
+  PhotographIcon
 } from '@heroicons/react/outline';
 
 const AdminLayout = () => {
@@ -161,6 +162,20 @@ const AdminLayout = () => {
                 Quản lý người dùng
               </NavLink>
 
+              <NavLink
+                to="/admin/banners"
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`
+                }
+              >
+                <PhotographIcon className="h-5 w-5 mr-3" />
+                Quản lý Banner
+              </NavLink>
+
               <hr className="my-4 border-gray-200" />
               
               <button
@@ -295,6 +310,21 @@ const AdminLayout = () => {
           >
             <UserGroupIcon className="h-5 w-5 mr-3" />
             Quản lý người dùng
+          </NavLink>
+
+          <NavLink
+            to="/admin/banners"
+            className={({ isActive }) =>
+              `flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                isActive
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`
+            }
+            onClick={() => document.getElementById('mobile-menu').classList.add('hidden')}
+          >
+            <PhotographIcon className="h-5 w-5 mr-3" />
+            Quản lý Banner
           </NavLink>
 
           <hr className="my-2 border-gray-200" />

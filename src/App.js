@@ -28,6 +28,7 @@ import UserManagement from './pages/Admin/UserManagement';
 import CategoriesManagement from './pages/Admin/CategoriesManagement';
 import BrandsManagement from './pages/Admin/BrandsManagement';
 import UserForm from './pages/Admin/UserForm';
+import BannersManagement from './pages/Admin/BannersManagement';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import PrivateRoute from './components/routes/PrivateRoute';
@@ -38,6 +39,7 @@ import PromotionForm from './pages/Admin/PromotionForm';
 import SizeGuide from './pages/SizeGuide/SizeGuide';
 import ShippingPolicy from './pages/ShippingPolicy/ShippingPolicy';
 import ChatBox from './components/chat/ChatBox';
+import ChatQuestionStats from './components/admin/ChatQuestionStats';
 
 function App() {
     const { isAuthenticated } = useSelector(state => state.auth);
@@ -134,6 +136,8 @@ function App() {
                                 <Route path="users" element={<UserManagement />} />
                                 <Route path="users/new" element={<UserForm />} />
                                 <Route path="users/:id/edit" element={<UserForm />} />
+                                <Route path="banners" element={<BannersManagement />} />
+                                <Route path="chat-stats" element={<ChatQuestionStats />} />
                             </Route>
                         </Route>
 

@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChatIcon, XIcon, PaperAirplaneIcon, BellIcon, VolumeUpIcon, VolumeOffIcon } from '@heroicons/react/outline';
 import chatService from '../../services/chatService';
 import { MAX_CHAT_HISTORY } from '../../config';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 const ChatBox = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +16,7 @@ const ChatBox = () => {
   const messagesEndRef = useRef(null);
   const messageAudioRef = useRef(null);
   
-  // Tạo audio element cho âm thanh thông báo
+ 
   useEffect(() => {
     messageAudioRef.current = new Audio('https://assets.mixkit.co/sfx/download/mixkit-software-interface-start-2574.wav');
     messageAudioRef.current.volume = 0.5;
@@ -122,14 +124,24 @@ const ChatBox = () => {
     const regex = /(localhost:3000\/products\/\d+)/g;
     
     if (!regex.test(text)) {
-      return <span>{text}</span>;
+      // Xử lý xuống dòng và định dạng văn bản
+      const lines = text.split('\n');
+      return (
+        <div className="whitespace-pre-wrap">
+          {lines.map((line, i) => (
+            <p key={i} className="mb-1 last:mb-0">
+              {line}
+            </p>
+          ))}
+        </div>
+      );
     }
     
     const parts = text.split(regex);
     const matches = text.match(regex) || [];
     
     return (
-      <>
+      <div className="whitespace-pre-wrap">
         {parts.map((part, i) => {
           // Nếu phần này là một URL
           if (matches.includes(part)) {
@@ -138,7 +150,7 @@ const ChatBox = () => {
               <a 
                 key={i}
                 href={href}
-                className="text-blue-500 hover:underline"
+                className="text-blue-500 hover:underline inline-block"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -146,10 +158,19 @@ const ChatBox = () => {
               </a>
             );
           }
-          // Nếu không phải URL
-          return <span key={i}>{part}</span>;
+          // Nếu không phải URL, xử lý xuống dòng
+          const lines = part.split('\n');
+          return (
+            <span key={i}>
+              {lines.map((line, j) => (
+                <p key={j} className="mb-1 last:mb-0">
+                  {line}
+                </p>
+              ))}
+            </span>
+          );
         })}
-      </>
+      </div>
     );
   };
   
@@ -160,6 +181,59 @@ const ChatBox = () => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  // Cập nhật phần hiển thị tin nhắn
+  const MessageBubble = ({ message, isUser }) => {
+    const formattedTime = message.timestamp 
+      ? format(new Date(message.timestamp), 'HH:mm', { locale: vi })
+      : '';
+
+    return (
+      <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+        <div className={`flex flex-col max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
+          <div className={`flex items-center gap-2 mb-1 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              isUser ? 'bg-blue-500' : 'bg-gray-200'
+            }`}>
+              {isUser ? (
+                <span className="text-white text-sm font-medium">Bạn</span>
+              ) : (
+                <span className="text-gray-600 text-sm font-medium">Bot</span>
+              )}
+            </div>
+            <span className="text-xs text-gray-500">{formattedTime}</span>
+          </div>
+          <div className={`rounded-lg p-3 ${
+            isUser 
+              ? 'bg-blue-500 text-white rounded-tr-none' 
+              : 'bg-gray-100 text-gray-800 rounded-tl-none'
+          } ${message.isError ? 'bg-red-100 text-red-800' : ''} break-words`}>
+            {formatMessageWithLinks(message.text)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Cập nhật phần hiển thị loading
+  const LoadingIndicator = () => (
+    <div className="flex justify-start mb-4">
+      <div className="flex flex-col max-w-[80%]">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+            <span className="text-gray-600 text-sm font-medium">Bot</span>
+          </div>
+        </div>
+        <div className="bg-gray-100 text-gray-800 rounded-lg p-3 rounded-tl-none">
+          <div className="flex space-x-2">
+            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="fixed bottom-5 right-5 z-50">
@@ -183,15 +257,18 @@ const ChatBox = () => {
       <div
         className={`${
           isOpen ? 'flex' : 'hidden'
-        } flex-col w-80 sm:w-96 h-96 bg-white rounded-lg shadow-xl overflow-hidden transition-all`}
+        } flex-col w-80 sm:w-96 h-[500px] bg-white rounded-lg shadow-xl overflow-hidden transition-all`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-blue-500 text-white">
-          <h3 className="font-medium">Chat với chúng tôi</h3>
+          <div className="flex items-center gap-2">
+            <ChatIcon className="h-5 w-5" />
+            <h3 className="font-medium">Chat với chúng tôi</h3>
+          </div>
           <div className="flex items-center space-x-2">
             <button 
               onClick={toggleSound}
-              className="focus:outline-none"
+              className="focus:outline-none hover:bg-blue-600 p-1 rounded"
               aria-label={soundEnabled ? "Tắt âm thanh" : "Bật âm thanh"}
             >
               {soundEnabled ? (
@@ -211,7 +288,7 @@ const ChatBox = () => {
             )}
             <button 
               onClick={() => setIsOpen(false)} 
-              className="focus:outline-none"
+              className="focus:outline-none hover:bg-blue-600 p-1 rounded"
               aria-label="Đóng chat box"
             >
               <XIcon className="h-5 w-5" />
@@ -228,53 +305,32 @@ const ChatBox = () => {
             </div>
           ) : (
             chatHistory.map((chat, index) => (
-              <div
+              <MessageBubble 
                 key={index}
-                className={`mb-3 ${
-                  chat.sender === 'user'
-                    ? 'ml-auto bg-blue-500 text-white'
-                    : 'mr-auto bg-gray-200 text-gray-800'
-                } p-3 rounded-lg max-w-[80%] relative ${chat.isError ? 'bg-red-100 text-red-800' : ''}`}
-              >
-                <div className="text-sm mb-1 font-medium">
-                  {chat.sender === 'user' ? 'Bạn' : 'Shop VVDG'}
-                </div>
-                {formatMessageWithLinks(chat.text)}
-                {chat.timestamp && (
-                  <div className="text-xs opacity-70 text-right mt-1">
-                    {formatMessageTime(chat.timestamp)}
-                  </div>
-                )}
-              </div>
+                message={chat}
+                isUser={chat.sender === 'user'}
+              />
             ))
           )}
-          {isLoading && (
-            <div className="mr-auto bg-gray-200 text-gray-800 p-3 rounded-lg max-w-[80%]">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></div>
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></div>
-              </div>
-            </div>
-          )}
+          {isLoading && <LoadingIndicator />}
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input area */}
-        <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-200">
-          <div className="flex items-center">
+        <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-200 bg-white">
+          <div className="flex items-center gap-2">
             <input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Nhập tin nhắn..."
-              className="flex-grow px-4 py-2 border rounded-l-lg focus:outline-none focus:border-blue-500"
+              className="flex-grow px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={isLoading || !message.trim()}
-              className={`px-4 py-2 bg-blue-500 text-white rounded-r-lg ${
+              className={`p-2 bg-blue-500 text-white rounded-lg ${
                 isLoading || !message.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
               }`}
               aria-label="Gửi tin nhắn"

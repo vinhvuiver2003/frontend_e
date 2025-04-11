@@ -2,6 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import ProductCard from '../../components/product/ProductCard';
+import bannerService from '../../services/bannerService';
+
+// API Base URL
+const API_BASE_URL = 'http://localhost:8080';
+
+// Hàm tạo URL đầy đủ cho ảnh
+const getFullImageUrl = (imagePath) => {
+    if (!imagePath) return '';
+    
+    // Nếu đã là URL đầy đủ
+    if (imagePath.startsWith('http')) {
+        return imagePath;
+    }
+    
+    // Thêm đường dẫn truy cập ảnh
+    return `${API_BASE_URL}/images/${imagePath}`;
+};
 
 // Dữ liệu mẫu
 const sampleProducts = [
@@ -35,30 +52,31 @@ const Home = () => {
     const [activeSlide, setActiveSlide] = useState(0);
     const [randomProducts, setRandomProducts] = useState([]);
     const [brands, setBrands] = useState([]);
+    const [banners, setBanners] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Banner slides
-    const banners = [
+    // Lấy dữ liệu mẫu mặc định nếu không có dữ liệu từ API
+    const defaultBanners = [
         {
             id: 1,
             title: "Bộ sưu tập mới nhất 2025",
             description: "Khám phá xu hướng thời trang mới nhất",
-            image: "https://images.unsplash.com/photo-1445205170230-053b83016050?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
-            link: "/products?sortBy=createdAt-desc"
+            imageUrl: "https://images.unsplash.com/photo-1445205170230-053b83016050?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+            linkToCategory: "/products?sortBy=createdAt-desc"
         },
         {
             id: 2,
             title: "Giảm giá đến 50%",
             description: "Ưu đãi đặc biệt cho các sản phẩm cao cấp",
-            image: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
-            link: "/products?sortBy=discount-desc"
+            imageUrl: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+            linkToCategory: "/products?sortBy=discount-desc"
         },
         {
             id: 3,
             title: "Phụ kiện độc đáo",
             description: "Hoàn thiện phong cách với bộ sưu tập phụ kiện mới",
-            image: "https://images.unsplash.com/photo-1492707892479-7bc8d5a4ee93?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1530&q=80",
-            link: "/products?category=3"
+            imageUrl: "https://images.unsplash.com/photo-1492707892479-7bc8d5a4ee93?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1530&q=80",
+            linkToCategory: "/products?category=3"
         }
     ];
 
@@ -106,10 +124,13 @@ const Home = () => {
 
     // Auto slide chuyển banner
     useEffect(() => {
-        const interval = setInterval(() => {
-            setActiveSlide((current) => (current === banners.length - 1 ? 0 : current + 1));
-        }, 5000);
-        return () => clearInterval(interval);
+        // Chỉ chạy auto slide khi có banner
+        if (banners.length > 0) {
+            const interval = setInterval(() => {
+                setActiveSlide((current) => (current === banners.length - 1 ? 0 : current + 1));
+            }, 5000);
+            return () => clearInterval(interval);
+        }
     }, [banners.length]);
 
     // Fetch sản phẩm ngẫu nhiên và brands
@@ -117,6 +138,23 @@ const Home = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
+                // Fetch banner từ API
+                try {
+                    const bannersResponse = await bannerService.getAllBanners();
+                    console.log('Banners từ API:', bannersResponse);
+                    // Chỉ lấy banner đang hoạt động (isActive=true) và sắp xếp theo displayOrder
+                    const activeBanners = Array.isArray(bannersResponse) 
+                        ? bannersResponse
+                            .filter(banner => banner.isActive)
+                            .sort((a, b) => a.displayOrder - b.displayOrder)
+                        : [];
+                    
+                    setBanners(activeBanners.length > 0 ? activeBanners : defaultBanners);
+                } catch (error) {
+                    console.error('Lỗi khi tải banner, sử dụng dữ liệu mẫu:', error);
+                    setBanners(defaultBanners);
+                }
+
                 // Fetch sản phẩm ngẫu nhiên
                 const productsResponse = await axios.get('http://localhost:8080/api/products/random?limit=8');
                 setRandomProducts(productsResponse.data.data || []);
@@ -154,17 +192,21 @@ const Home = () => {
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-black to-transparent opacity-50"></div>
                             <img 
-                                src={banner.image} 
+                                src={getFullImageUrl(banner.imageUrl)} 
                                 alt={banner.title} 
                                 className="w-full h-full object-cover object-center"
+                                onError={(e) => {
+                                    console.error('Lỗi tải ảnh banner:', banner.imageUrl);
+                                    e.target.src = 'https://via.placeholder.com/1400x500?text=Banner+Image';
+                                }}
                             />
                             <div className="absolute inset-0 flex items-center">
                                 <div className="container mx-auto px-4">
                                     <div className="max-w-md text-white">
                                         <h1 className="text-3xl md:text-5xl font-bold mb-4">{banner.title}</h1>
-                                        <p className="text-lg md:text-xl mb-6">{banner.description}</p>
+                                        <p className="text-lg md:text-xl mb-6">{banner.description || 'Xem sản phẩm ngay hôm nay'}</p>
                                         <Link 
-                                            to={banner.link} 
+                                            to={banner.linkToCategory} 
                                             className="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
                                         >
                                             Xem ngay
@@ -231,13 +273,17 @@ const Home = () => {
                         {brands.map(brand => (
                             <Link 
                                 key={brand.id} 
-                                to={brand.link}
+                                to={`/products?brand=${brand.id}`}
                                 className="bg-white p-6 rounded-lg shadow-sm flex justify-center items-center h-24 hover:shadow-md transition-shadow"
                             >
                                 <img 
-                                    src={brand.image} 
+                                    src={brand.logoUrl} 
                                     alt={brand.name}
                                     className="max-h-12 max-w-full object-contain"
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "https://via.placeholder.com/150?text=No+Logo";
+                                    }}
                                 />
                             </Link>
                         ))}

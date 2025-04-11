@@ -173,7 +173,7 @@ const Checkout = () => {
                 phone: formData.phone,
                 shippingAddress: `${formData.address}, ${formData.city}`,
                 note: formData.notes,
-                paymentMethod: 'sepay',
+                paymentMethod: 'vnpay',
                 shippingMethod: formData.shippingMethod,
             };
             
@@ -185,9 +185,9 @@ const Checkout = () => {
             // Gọi API đặt hàng
             const result = await dispatch(checkoutOrder(checkoutData)).unwrap();
             
-            // Nếu chọn thanh toán qua SePay, tạo URL thanh toán và chuyển hướng
-            if (checkoutData.paymentMethod === 'sepay') {
-                const response = await orderService.createSePayPaymentUrl(result.id, 'ALL');
+            // Nếu chọn thanh toán qua VNPay, tạo URL thanh toán và chuyển hướng
+            if (checkoutData.paymentMethod === 'vnpay') {
+                const response = await orderService.createVnPayPaymentUrl(result.id);
                 window.location.href = response.data.data;
                 return;
             }
@@ -222,7 +222,7 @@ const Checkout = () => {
                         discount: discountAmount,
                         shipping: formData.shippingMethod === 'express' ? 50000 : 20000,
                         total: totalAmount - discountAmount + (formData.shippingMethod === 'express' ? 50000 : 20000),
-                        paymentMethod: 'sepay',
+                        paymentMethod: 'vnpay',
                         shippingMethod: formData.shippingMethod
                     }
                 }
@@ -478,16 +478,16 @@ const Checkout = () => {
                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                 />
                                 <label htmlFor="vnpay" className="ml-3 block text-sm font-medium text-gray-700">
-                                    Thanh toán qua SEPAY
+                                    Thanh toán qua VNPAY
                                 </label>
                             </div>
                             
                             <div className="pl-7 mt-2 p-3 bg-gray-50 rounded-md">
                                 <p className="text-sm font-medium text-gray-700">Thông tin thanh toán:</p>
-                                <p className="text-sm text-gray-600">Bạn sẽ được chuyển đến cổng thanh toán SEPAY để quét mã QR thanh toán.</p>
+                                <p className="text-sm text-gray-600">Bạn sẽ được chuyển đến cổng thanh toán VNPAY để thanh toán.</p>
                                 <p className="text-sm text-gray-600">Sau khi thanh toán thành công, đơn hàng sẽ được xử lý ngay lập tức.</p>
                                 <div className="mt-2 flex justify-center">
-                                    <img src="/images/sepay-logo.png" alt="SEPAY" className="h-10" onError={(e) => e.target.style.display = 'none'} />
+                                    <img src="/images/vnpay-logo.png" alt="VNPAY" className="h-10" onError={(e) => e.target.style.display = 'none'} />
                                 </div>
                             </div>
                         </div>
@@ -547,7 +547,7 @@ const Checkout = () => {
                             
                             <div className="flex justify-between pt-2">
                                 <span className="text-gray-600">Phương thức thanh toán</span>
-                                <span className="font-medium text-blue-600">SEPAY</span>
+                                <span className="font-medium text-blue-600">VNPAY</span>
                             </div>
                         </div>
 
@@ -560,7 +560,7 @@ const Checkout = () => {
                                     isLoading ? 'opacity-70 cursor-not-allowed' : ''
                                 }`}
                             >
-                                {isLoading ? 'Đang xử lý...' : 'Thanh toán qua SEPAY'}
+                                {isLoading ? 'Đang xử lý...' : 'Thanh toán qua VNPAY'}
                             </button>
                             
                             <button
